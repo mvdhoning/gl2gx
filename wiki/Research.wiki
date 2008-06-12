@@ -1,0 +1,19 @@
+#summary Info on writing using gx on WII or GameCube.
+#labels research,gl,gx
+
+= Research =
+
+Info on writing using gx on WII or GameCube.
+
+
+= Details =
+
+Needed for creating WII/GameCube applications:
+  * http://www.devkitpro.org/
+ 
+Info on GX:
+  * http://www.amnoid.de/gc/tev.html
+  * http://www.gamasutra.com/features/20021002/sauer_pfv.htm
+
+Info on OpenGL:
+  * http://www.opengl.org/documentation/red_book/
