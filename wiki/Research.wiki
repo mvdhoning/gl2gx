@@ -8,7 +8,7 @@ Info on writing using gx on WII or Gamecube.
 
 = Details =
 
-Needed for creating WII/GameCube applications:
+Needed for creating WII/Gamecube applications:
   * http://www.devkitpro.org/
  
 Info on GX:
