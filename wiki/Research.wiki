@@ -14,6 +14,7 @@ Needed for creating WII/Gamecube applications:
 Info on GX:
   * http://www.amnoid.de/gc/tev.html
   * http://www.gamasutra.com/features/20021002/sauer_pfv.htm
+  * http://www.gcdev.com/smf/index.php?topic=185.0 GX pixelshader assembler V0.2
 
 Info on OpenGL:
   * http://www.opengl.org/documentation/red_book/
