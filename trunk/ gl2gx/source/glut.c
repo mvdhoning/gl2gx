@@ -99,7 +99,7 @@ void glutInitDisplayMode(unsigned int mode) {
 	// args: texcoord slot 0-7, matrix type, source to generate texture coordinates from, matrix to use 
 	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
 
-	GX_SetNumChans(1);
+	GX_SetNumChans(1); //	<RedShade>	GX_SetNumChans(1); = turn on 1 channel of lighting
 
 	GX_SetNumTexGens(1); //multitexturing so set to 1 for now
 	GX_InvalidateTexAll(); //now be carefull as this clears all texture memory could get unpredicted results on second call

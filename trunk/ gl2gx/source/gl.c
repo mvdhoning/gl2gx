@@ -27,9 +27,9 @@ void glTranslatef(float x,float y,float z) {
 	guMtxIdentity(model);
 	guMtxTransApply(model, model, x, y, z);	
 	guMtxConcat(tempmodel,model,model);
-	guMtxConcat(view,model,modelview);
+	//guMtxConcat(view,model,modelview);
 	// load the modelview matrix into matrix memory
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+	//GX_LoadPosMtxImm(modelview, GX_PNMTX0); //TODO: move to glend;
 }
 
 void  glRotatef (GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
@@ -42,9 +42,9 @@ void  glRotatef (GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 	guMtxIdentity(model);
 	guMtxRotAxisDeg(model, &axis, angle);
 	guMtxConcat(tempmodel,model,model);
-	guMtxConcat(view,model,modelview);
+	//guMtxConcat(view,model,modelview);
 	// load the modelview matrix into matrix memory
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+	//GX_LoadPosMtxImm(modelview, GX_PNMTX0); //TODO: move to glend;
 }
 
 void  glScalef (GLfloat x, GLfloat y, GLfloat z){
@@ -53,15 +53,15 @@ void  glScalef (GLfloat x, GLfloat y, GLfloat z){
 	guMtxIdentity(model);
 	guMtxScale(model, x, y, z);
 	guMtxConcat(tempmodel,model,model);
-	guMtxConcat(view,model,modelview);
+	//guMtxConcat(view,model,modelview);
 	// load the modelview matrix into matrix memory
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+	//GX_LoadPosMtxImm(modelview, GX_PNMTX0); //TODO: move to glend;
 }
 
 void  glPopMatrix (void){
 	guMtxCopy(_mtxelements[_mtxcurrentelement], model);
-	guMtxConcat(view,model,modelview);
-	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+	//guMtxConcat(view,model,modelview);
+	//GX_LoadPosMtxImm(modelview, GX_PNMTX0); //TODO: move to glend;
 	_mtxcurrentelement -=1;
 }
 
@@ -126,19 +126,24 @@ void glBegin(GLenum type) {
 
 void glEnd(void) {
 
+	guMtxConcat(view,model,modelview);
+	// load the modelview matrix into matrix memory
+	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
+
 
 	//also add light poss:
 	//guVecMultiply(view,&lpos,&lpos);
 
 	//for normals first calculate normal matrix (thanks shagkur)
-//	guMtxIdentity(inversemodel);
-//	guMtxInverse(modelview,inversemodel);
-//	guMtxTranspose(inversemodel,inversemodel); //??
-//	GX_LoadNrmMtxImm(inversemodel,GX_PNMTX0);
+	//guMtxIdentity(inversemodel);
+	guMtxInverse(modelview,inversemodel);
+	guMtxTranspose(inversemodel,inversemodel); //??
+	GX_LoadNrmMtxImm(inversemodel,GX_PNMTX0);
 
-
-	//set the curtexture
+	//set the curtexture if tex2denabled
+	if (tex2denabled){
 	GX_LoadTexObj(&gxtextures[curtexture], GX_TEXMAP0); //TODO: make GX_TEXMAP0 dynamic for multitexturing
+	};
 
 	//now we can draw the gx way
 	GX_Begin(_type, GX_VTXFMT0, _numelements);
@@ -207,17 +212,17 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 			GX_InitLightPos(&gxlight[lightNum],lightPos.x,lightPos.y,lightPos.z); 
 			break;
 		case GL_DIFFUSE:
-			lightCol.r = params[0];
-			lightCol.g = params[1];
-			lightCol.b = params[2]; 
-			lightCol.a = params[3]; 
+			lightCol.r = params[0] * 0xff;
+			lightCol.g = params[1] * 0xff;
+			lightCol.b = params[2] * 0xff; 
+			lightCol.a = params[3] * 0xff; 
 			GX_InitLightColor(&gxlight[lightNum],lightCol);
 			break;
 		case GL_AMBIENT:
-			AmbientColor.r = params[0];
-			AmbientColor.g = params[1];
-			AmbientColor.b = params[2];
-			AmbientColor.a = params[3];
+			AmbientColor.r = params[0] * 0xff;
+			AmbientColor.g = params[1] * 0xff;
+			AmbientColor.b = params[2] * 0xff;
+			AmbientColor.a = params[3] * 0xff;
 	}
 };
 
@@ -284,14 +289,28 @@ void glEnable(GLenum type){
 		{
 			case GL_DEPTH_TEST: depthtestenabled = GX_TRUE; break;
 			case GL_LIGHTING:
+				GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE); //TODO: a call to gl_texture_2d should not undo this?
+				//GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 				GX_SetChanCtrl(GX_COLOR0,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE); //expand this to create opengl lighting mode.
 				GX_SetChanAmbColor(GX_COLOR0A0,AmbientColor); //is this a light color?
+
+//	<RedShade>	GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG,GX_SRC_REG,GX_LIGHTNULL,GX_DF_NONE,GX_AF_NONE); = settings for that channel
+
+//	<RedShade>	1st = color that light will result in, second is (ON/OFF0
+//	<RedShade>	3rd = ambient color is on vertex, or uses global GX_SetChanAmbColor(GX_COLOR0A0, ambient);
+//	<RedShade>	light null = 00000000, light_1 = 00000001
+//	<RedShade>	4th = material color = vertex based, or global with setchanmatcolor
+//	<RedShade>	df = turning on/off difuse light
+//	<RedShade>	af = type of lighting (spetral/spotlight)
+
 				break;
 			case GL_TEXTURE_2D:
+				tex2denabled = true;
+				GX_SetNumTexGens(1); //multitexturing so set to 1 for now
 				GX_SetTevOp(GX_TEVSTAGE0,GX_REPLACE);
 				GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 				break;
-			case GL_LIGHT0: GX_LoadLightObj(&gxlight[0],GX_LIGHT0);
+			case GL_LIGHT0: GX_LoadLightObj(&gxlight[0],GX_LIGHT0); //should fill mask to be used by GL_LIGHTNING
 			case GL_LIGHT1: GX_LoadLightObj(&gxlight[1],GX_LIGHT1);
 			case GL_LIGHT2: GX_LoadLightObj(&gxlight[2],GX_LIGHT2);
 			case GL_LIGHT3: GX_LoadLightObj(&gxlight[3],GX_LIGHT3);
@@ -307,9 +326,12 @@ void glDisable(GLenum type){
 		{
 			case GL_DEPTH_TEST: depthtestenabled = GX_FALSE; break;
 			case GL_LIGHTING:
+				GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 				GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG,GX_SRC_VTX,GX_LIGHTNULL,GX_DF_NONE,GX_AF_NONE); //how to disable ligting?
 				break;
 			case GL_TEXTURE_2D:
+				tex2denabled = false;
+				GX_SetNumTexGens(0); //texturing is of so no textures
 				GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);			
 				GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 				break;
