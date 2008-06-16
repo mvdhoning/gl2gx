@@ -22,52 +22,42 @@ void glLoadIdentity(void) {
 }
 
 void glTranslatef(float x,float y,float z) {
-	Mtx tempmodel;
-	guMtxCopy(model, tempmodel);
-	guMtxIdentity(model);
-	guMtxTransApply(model, model, x, y, z);	
-	guMtxConcat(tempmodel,model,model);
-	//guMtxConcat(view,model,modelview);
-	// load the modelview matrix into matrix memory
-	//GX_LoadPosMtxImm(modelview, GX_PNMTX0); //TODO: move to glend;
+	Mtx temp;
+
+	guMtxIdentity(temp);
+	guMtxTrans(temp, x, y, z);	
+	guMtxConcat(model,temp,model);
 }
 
 void  glRotatef (GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
-	Mtx tempmodel;
-	guMtxCopy(model, tempmodel);
+	Mtx temp;
 	Vector axis;
+
 	axis.x = x;
 	axis.y = y;
 	axis.z = z;
-	guMtxIdentity(model);
-	guMtxRotAxisDeg(model, &axis, angle);
-	guMtxConcat(tempmodel,model,model);
-	//guMtxConcat(view,model,modelview);
-	// load the modelview matrix into matrix memory
-	//GX_LoadPosMtxImm(modelview, GX_PNMTX0); //TODO: move to glend;
+	guMtxIdentity(temp);
+	guMtxRotAxisDeg(temp, &axis, angle);
+	guMtxConcat(model,temp,model);
+
 }
 
 void  glScalef (GLfloat x, GLfloat y, GLfloat z){
-	Mtx tempmodel;
-	guMtxCopy(model, tempmodel);
-	guMtxIdentity(model);
-	guMtxScale(model, x, y, z);
-	guMtxConcat(tempmodel,model,model);
-	//guMtxConcat(view,model,modelview);
-	// load the modelview matrix into matrix memory
-	//GX_LoadPosMtxImm(modelview, GX_PNMTX0); //TODO: move to glend;
+	Mtx temp;
+
+	guMtxIdentity(temp);
+	guMtxScale(temp, x, y, z);
+	guMtxConcat(model,temp,model);
 }
 
 void  glPopMatrix (void){
+	_mtxcurrentelement--;
 	guMtxCopy(_mtxelements[_mtxcurrentelement], model);
-	//guMtxConcat(view,model,modelview);
-	//GX_LoadPosMtxImm(modelview, GX_PNMTX0); //TODO: move to glend;
-	_mtxcurrentelement -=1;
 }
 
 void  glPushMatrix (void){
-	_mtxcurrentelement +=1;
 	guMtxCopy(model, _mtxelements[_mtxcurrentelement]);
+	_mtxcurrentelement++;
 }
 
 /* glVertex */
@@ -126,19 +116,16 @@ void glBegin(GLenum type) {
 
 void glEnd(void) {
 
-	guMtxConcat(view,model,modelview);
+	Mtx mvi;
+
 	// load the modelview matrix into matrix memory
+	guMtxConcat(view,model,modelview);
 	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 
-
-	//also add light poss:
-	//guVecMultiply(view,&lpos,&lpos);
-
 	//for normals first calculate normal matrix (thanks shagkur)
-	//guMtxIdentity(inversemodel);
-	guMtxInverse(modelview,inversemodel);
-	guMtxTranspose(inversemodel,inversemodel); //??
-	GX_LoadNrmMtxImm(inversemodel,GX_PNMTX0);
+	guMtxInverse(modelview,mvi);
+	guMtxTranspose(mvi,modelview); //??
+	GX_LoadNrmMtxImm(modelview,GX_PNMTX0);
 
 	//set the curtexture if tex2denabled
 	if (tex2denabled){
