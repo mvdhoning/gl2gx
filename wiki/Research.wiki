@@ -15,6 +15,8 @@ Info on GX:
   * http://www.amnoid.de/gc/tev.html
   * http://www.gamasutra.com/features/20021002/sauer_pfv.htm
   * http://www.gcdev.com/smf/index.php?topic=185.0 GX pixelshader assembler V0.2
+  * http://www.tehskeen.com/forums/forumdisplay.php?f=86 ogc support forum
+  * http://www.tehskeen.com/forums/showthread.php?t=7507 the rosetta stone to get lights working?
 
 Info on OpenGL:
   * http://www.opengl.org/documentation/red_book/
