@@ -127,6 +127,9 @@ void glEnd(void) {
 	guMtxTranspose(mvi,modelview); //??
 	GX_LoadNrmMtxImm(modelview,GX_PNMTX0);
 
+	//now set light
+	GX_InitLightPos(&gxlight[gxcurlight],gxlightpos.x,gxlightpos.y,gxlightpos.z);
+
 	//set the curtexture if tex2denabled
 	if (tex2denabled){
 	GX_LoadTexObj(&gxtextures[curtexture], GX_TEXMAP0); //TODO: make GX_TEXMAP0 dynamic for multitexturing
@@ -193,10 +196,17 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 	switch(pname)
 	{
 		case GL_POSITION: 
-			lightPos.x = params[0];
-			lightPos.y = params[1];
-			lightPos.z = params[2];
-			GX_InitLightPos(&gxlight[lightNum],lightPos.x,lightPos.y,lightPos.z); 
+			//lightPos.x = params[0];
+			//lightPos.y = params[1];
+			//lightPos.z = params[2];
+			//GX_InitLightPos(&gxlight[lightNum],lightPos.x,lightPos.y,lightPos.z); 
+			gxlightpos.x = params[0];
+			gxlightpos.y = params[1];
+			gxlightpos.z = params[2];
+			gxcurlight = lightNum;
+
+
+
 			break;
 		case GL_DIFFUSE:
 			lightCol.r = params[0] * 0xff;
@@ -279,7 +289,7 @@ void glEnable(GLenum type){
 				GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE); //TODO: a call to gl_texture_2d should not undo this?
 				//GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 				GX_SetChanCtrl(GX_COLOR0,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE); //expand this to create opengl lighting mode.
-				GX_SetChanAmbColor(GX_COLOR0A0,AmbientColor); //is this a light color?
+				//GX_SetChanAmbColor(GX_COLOR0A0,AmbientColor); //is this a light color?
 
 //	<RedShade>	GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG,GX_SRC_REG,GX_LIGHTNULL,GX_DF_NONE,GX_AF_NONE); = settings for that channel
 
@@ -289,6 +299,40 @@ void glEnable(GLenum type){
 //	<RedShade>	4th = material color = vertex based, or global with setchanmatcolor
 //	<RedShade>	df = turning on/off difuse light
 //	<RedShade>	af = type of lighting (spetral/spotlight)
+
+				//light setup?
+
+				GX_SetNumChans(1); //use/enable one light (the first?)
+				
+	//			GX_SetChanCtrl(GX_COLOR0A0, TRUE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT0, GX_DF_SIGNED, GX_AF_NONE); //write out what this does
+
+
+				//GXColor amb = { 128, 64, 64, 255 };
+				GXColor amb = { 123, 123, 123, 123 }; //glmaterialf ?
+				GXColor mat = { 123, 123, 123, 123 }; //glmaterialf ?
+				GX_SetChanAmbColor(GX_COLOR0A0, amb); //glmaterialf ?
+				GX_SetChanMatColor(GX_COLOR0A0, mat); //glmaterialf ?
+
+				// Set up shader (write out what each step means)
+				GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+				GX_SetNumTevStages(1);
+				//color
+				GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+				//alpha
+				GX_SetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
+
+				//order
+				if (tex2denabled){
+					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+				}
+				else {
+					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				};				
+				GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+
 
 				break;
 			case GL_TEXTURE_2D:
@@ -313,6 +357,7 @@ void glDisable(GLenum type){
 		{
 			case GL_DEPTH_TEST: depthtestenabled = GX_FALSE; break;
 			case GL_LIGHTING:
+				GX_SetNumChans(1); //keep this at one all time?
 				GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 				GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG,GX_SRC_VTX,GX_LIGHTNULL,GX_DF_NONE,GX_AF_NONE); //how to disable ligting?
 				break;
