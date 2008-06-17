@@ -128,7 +128,32 @@ void glEnd(void) {
 	GX_LoadNrmMtxImm(modelview,GX_PNMTX0);
 
 	//now set light
-	GX_InitLightPos(&gxlight[gxcurlight],gxlightpos.x,gxlightpos.y,gxlightpos.z);
+
+	// Create light source (only one light for testing now)
+	GXLightObj lightObj;
+	GXColor lightColour = { 123, 0, 0, 123 };
+
+	Vector lpos; //gxlightpos should also be corrected an gllightfv
+	lpos.x = gxlightpos.x; //6.0;
+	lpos.y = gxlightpos.y; //9.0;
+	lpos.z = gxlightpos.z; //-8.0;
+	guVecMultiply(view,&lpos,&lpos);
+
+	GX_InitLightPos(&lightObj, lpos.x, lpos.y, lpos.z); //what matrix is used here? e.g. maybe modelview?
+																	//also in opengl light move accordingly to gltranslate etc.
+	GX_InitLightColor(&lightObj, lightColour);
+	GX_InitLightDir(&lightObj, 0, -1, 0);
+	GX_InitLightDistAttn(&lightObj, 20.0f, 0.5f, GX_DA_MEDIUM);
+	GX_InitLightSpot(&lightObj, 0.0f, GX_SP_OFF);
+	GX_LoadLightObj(&lightObj, GX_LIGHT0); //if i change &lightObj do i need to load it again?
+
+
+
+	//GX_InitLightPos(&gxlight[gxcurlight],gxlightpos.x,gxlightpos.y,gxlightpos.z);
+
+	//noeska: i'm asking because the light's direction is not controlled by the hardware, so you must transform when the viewpoint changes
+	//light position should be transformed by world-to-view matrix
+	//<h0lyRS>	and direction should be transformed by inv-transposed of world-to-view
 
 	//set the curtexture if tex2denabled
 	if (tex2denabled){
@@ -196,13 +221,14 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 	switch(pname)
 	{
 		case GL_POSITION: 
-			//lightPos.x = params[0];
-			//lightPos.y = params[1];
-			//lightPos.z = params[2];
+			lightPos.x = params[0];
+			lightPos.y = params[1];
+			lightPos.z = params[2];
+			guVecMultiply(model,&lightPos,&lightPos);
 			//GX_InitLightPos(&gxlight[lightNum],lightPos.x,lightPos.y,lightPos.z); 
-			gxlightpos.x = params[0];
-			gxlightpos.y = params[1];
-			gxlightpos.z = params[2];
+			gxlightpos.x = lightPos.x;
+			gxlightpos.y = lightPos.y;
+			gxlightpos.z = lightPos.z;
 			gxcurlight = lightNum;
 
 
