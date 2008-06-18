@@ -127,6 +127,9 @@ void glEnd(void) {
 	guMtxTranspose(mvi,modelview);
 	GX_LoadNrmMtxImm(modelview,GX_PNMTX0);
 
+	//first check if a lightdirtyflag is set (thanks ector) so we do not have to set up light every run
+	//also usefull on matrices etc.
+
 	//now set each light
 	int lightcounter = 0;
 	for (lightcounter =0; lightcounter < 8; lightcounter++){
@@ -326,6 +329,13 @@ void glEnable(GLenum type){
 				//GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 
 				//making a lightmask (hmm there must be a more efficient way to do this, at least it should be somewhere else)
+				//<h0lyRS>	you can simply shift GX_LIGHT0 << lightnum
+				for (lightcounter =0; lightcounter < 8; lightcounter++){
+					if(gxlightenabled[lightcounter]){ //when light is enabled
+						gxlightmask |= (GX_LIGHT0 << lightcounter);
+					}
+				};
+/*
 				for (lightcounter =0; lightcounter < 8; lightcounter++){
 					if(gxlightenabled[lightcounter]){ //when light is enabled
 						switch (lightcounter){
@@ -340,6 +350,7 @@ void glEnable(GLenum type){
 						}
 					}
 				}
+*/
 
 				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_NONE); //uses (texture)perpixel colors (light works)
 //				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE); //vertex lighting (light does not work?)
