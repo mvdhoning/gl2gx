@@ -53,9 +53,11 @@ Mtx model, modelview, inversemodel, normalmodel;
 
 /* light */
 GXLightObj gxlight[8]; //max 8 lights in opengl
-GXColor AmbientColor;
-VertexElement gxlightpos; //test for light position
+VertexElement gxlightpos[8]; //light position for each light
+VertexElement gxlightdir[8]; //light direction for each light
+bool gxlightenabled[8]; //is specific light enabled
 int gxcurlight; //test for light position
+GXColor AmbientColor; //? is actually material?
 
 /* textures */
 bool tex2denabled;

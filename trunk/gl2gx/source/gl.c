@@ -124,36 +124,43 @@ void glEnd(void) {
 
 	//for normals first calculate normal matrix (thanks shagkur)
 	guMtxInverse(modelview,mvi);
-	guMtxTranspose(mvi,modelview); //??
+	guMtxTranspose(mvi,modelview);
 	GX_LoadNrmMtxImm(modelview,GX_PNMTX0);
 
-	//now set light
+	//now set each light
+	int lightcounter = 0;
+	for (lightcounter =0; lightcounter < 8; lightcounter++){
 
-	// Create light source (only one light for testing now)
-	GXLightObj lightObj;
-	GXColor lightColour = { 123, 0, 0, 123 };
+		if(gxlightenabled[lightcounter]){ //when light is enabled
 
-	Vector lpos; //gxlightpos should also be corrected an gllightfv
-	lpos.x = gxlightpos.x; //6.0;
-	lpos.y = gxlightpos.y; //9.0;
-	lpos.z = gxlightpos.z; //-8.0;
-	guVecMultiply(view,&lpos,&lpos);
+			//postion
+			Vector lpos;
+			lpos.x = gxlightpos[lightcounter].x;
+			lpos.y = gxlightpos[lightcounter].y;
+			lpos.z = gxlightpos[lightcounter].z;
+			guVecMultiply(view,&lpos,&lpos);	//update light position by current view matrix
+												//light position should be transformed by world-to-view matrix (thanks h0lyRS)
+			GX_InitLightPos(&gxlight[lightcounter], lpos.x, lpos.y, lpos.z); //feed corrected coord to light pos
+			
+			//dir attn spot TODO: these should be controleable from opengl
+			GX_InitLightDir(&gxlight[lightcounter], 0, -1, 0);	//shine down from y axis? Is this opengl default also?
+																//and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
+			GX_InitLightDistAttn(&gxlight[lightcounter], 20.0f, 0.5f, GX_DA_MEDIUM);
+			GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
 
-	GX_InitLightPos(&lightObj, lpos.x, lpos.y, lpos.z); //what matrix is used here? e.g. maybe modelview?
-																	//also in opengl light move accordingly to gltranslate etc.
-	GX_InitLightColor(&lightObj, lightColour);
-	GX_InitLightDir(&lightObj, 0, -1, 0);
-	GX_InitLightDistAttn(&lightObj, 20.0f, 0.5f, GX_DA_MEDIUM);
-	GX_InitLightSpot(&lightObj, 0.0f, GX_SP_OFF);
-	GX_LoadLightObj(&lightObj, GX_LIGHT0); //if i change &lightObj do i need to load it again?
-
-
-
-	//GX_InitLightPos(&gxlight[gxcurlight],gxlightpos.x,gxlightpos.y,gxlightpos.z);
-
-	//noeska: i'm asking because the light's direction is not controlled by the hardware, so you must transform when the viewpoint changes
-	//light position should be transformed by world-to-view matrix
-	//<h0lyRS>	and direction should be transformed by inv-transposed of world-to-view
+			//Load the light up
+			switch (lightcounter){
+				case 0: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT0); break;
+				case 1: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT1); break;
+				case 2: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT2); break;
+				case 3: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT3); break;
+				case 4: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT4); break;
+				case 5: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT5); break;
+				case 6: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT6); break;
+				case 7: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT7); break;
+			}
+		}
+	}
 
 	//set the curtexture if tex2denabled
 	if (tex2denabled){
@@ -224,15 +231,11 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 			lightPos.x = params[0];
 			lightPos.y = params[1];
 			lightPos.z = params[2];
-			guVecMultiply(model,&lightPos,&lightPos);
-			//GX_InitLightPos(&gxlight[lightNum],lightPos.x,lightPos.y,lightPos.z); 
-			gxlightpos.x = lightPos.x;
-			gxlightpos.y = lightPos.y;
-			gxlightpos.z = lightPos.z;
+			guVecMultiply(model,&lightPos,&lightPos); //update light position by current model matrix
+			gxlightpos[lightNum].x = lightPos.x;
+			gxlightpos[lightNum].y = lightPos.y;
+			gxlightpos[lightNum].z = lightPos.z;
 			gxcurlight = lightNum;
-
-
-
 			break;
 		case GL_DIFFUSE:
 			lightCol.r = params[0] * 0xff;
@@ -308,14 +311,39 @@ void glFlush(void) {
 }
 
 void glEnable(GLenum type){
+
+	u8 gxlightmask = 0x00000000;
+	int lightcounter = 0;
+
 		switch(type)
 		{
 			case GL_DEPTH_TEST: depthtestenabled = GX_TRUE; break;
 			case GL_LIGHTING:
-				GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE); //TODO: a call to gl_texture_2d should not undo this?
+				//expand this to create opengl lighting mode.
+
+				//GX_SetChanCtrl(GX_COLOR0A0, TRUE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT0, GX_DF_CLAMP, GX_AF_SPOT);
+				//GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE); //TODO: a call to gl_texture_2d should not undo this?
 				//GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
-				GX_SetChanCtrl(GX_COLOR0,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE); //expand this to create opengl lighting mode.
-				//GX_SetChanAmbColor(GX_COLOR0A0,AmbientColor); //is this a light color?
+
+				//making a lightmask (hmm there must be a more efficient way to do this, at least it should be somewhere else)
+				for (lightcounter =0; lightcounter < 8; lightcounter++){
+					if(gxlightenabled[lightcounter]){ //when light is enabled
+						switch (lightcounter){
+							case 0: gxlightmask = gxlightmask | GX_LIGHT0; break;
+							case 1: gxlightmask = gxlightmask | GX_LIGHT1; break;
+							case 2: gxlightmask = gxlightmask | GX_LIGHT2; break;
+							case 3: gxlightmask = gxlightmask | GX_LIGHT3; break;
+							case 4: gxlightmask = gxlightmask | GX_LIGHT4; break;
+							case 5: gxlightmask = gxlightmask | GX_LIGHT5; break;
+							case 6: gxlightmask = gxlightmask | GX_LIGHT6; break;
+							case 7: gxlightmask = gxlightmask | GX_LIGHT7; break;
+						}
+					}
+				}
+
+				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_NONE); //uses (texture)perpixel colors (light works)
+//				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE); //vertex lighting (light does not work?)
+				
 
 //	<RedShade>	GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG,GX_SRC_REG,GX_LIGHTNULL,GX_DF_NONE,GX_AF_NONE); = settings for that channel
 
@@ -330,31 +358,36 @@ void glEnable(GLenum type){
 
 				GX_SetNumChans(1); //use/enable one light (the first?)
 				
-	//			GX_SetChanCtrl(GX_COLOR0A0, TRUE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT0, GX_DF_SIGNED, GX_AF_NONE); //write out what this does
-
+				//GX_SetChanCtrl(GX_COLOR0A0, TRUE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT0, GX_DF_SIGNED, GX_AF_NONE); //write out what this does
+																//uses vertex? then what is GX_SRC_REG
 
 				//GXColor amb = { 128, 64, 64, 255 };
-				GXColor amb = { 123, 123, 123, 123 }; //glmaterialf ?
+				GXColor amb = { 128, 128, 128, 128 }; //glmaterialf ? 
 				GXColor mat = { 123, 123, 123, 123 }; //glmaterialf ?
-				GX_SetChanAmbColor(GX_COLOR0A0, amb); //glmaterialf ?
-				GX_SetChanMatColor(GX_COLOR0A0, mat); //glmaterialf ?
+				GX_SetChanAmbColor(GX_COLOR0A0, amb); //glmaterialf ? or GLOBAL AMBIEN LIGHT glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb); ??
+				GX_SetChanMatColor(GX_COLOR0A0, mat); //glmaterialf ? if to low no light effect visible to high object to bright be default
+				//How does this relate to light color? e.g. in opengl both light and material have diffuse and ambient component
 
 				// Set up shader (write out what each step means)
 				GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 				GX_SetNumTevStages(1);
+				
 				//color
 				GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+				
 				//alpha
 				GX_SetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
-
-				//order
+				
+				//tevorder
 				if (tex2denabled){
-					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+					GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_TEXC, GX_CC_TEXC, GX_CC_TEXC, GX_CC_RASC); 
+					GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_TEXA, GX_CA_TEXA, GX_CA_TEXA, GX_CA_RASA);
+					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //texturing
 				}
 				else {
-					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+					GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC); //vertex color?
+					GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
+					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //no texturing
 				};				
 				GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
@@ -367,14 +400,14 @@ void glEnable(GLenum type){
 				GX_SetTevOp(GX_TEVSTAGE0,GX_REPLACE);
 				GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 				break;
-			case GL_LIGHT0: GX_LoadLightObj(&gxlight[0],GX_LIGHT0); //should fill mask to be used by GL_LIGHTNING
-			case GL_LIGHT1: GX_LoadLightObj(&gxlight[1],GX_LIGHT1);
-			case GL_LIGHT2: GX_LoadLightObj(&gxlight[2],GX_LIGHT2);
-			case GL_LIGHT3: GX_LoadLightObj(&gxlight[3],GX_LIGHT3);
-			case GL_LIGHT4: GX_LoadLightObj(&gxlight[4],GX_LIGHT4);
-			case GL_LIGHT5: GX_LoadLightObj(&gxlight[5],GX_LIGHT5);
-			case GL_LIGHT6: GX_LoadLightObj(&gxlight[6],GX_LIGHT6);
-			case GL_LIGHT7: GX_LoadLightObj(&gxlight[7],GX_LIGHT7);
+			case GL_LIGHT0: gxlightenabled[0]=true; break;
+			case GL_LIGHT1: gxlightenabled[1]=true; break;
+			case GL_LIGHT2: gxlightenabled[2]=true; break;
+			case GL_LIGHT3: gxlightenabled[3]=true; break;
+			case GL_LIGHT4: gxlightenabled[4]=true; break;
+			case GL_LIGHT5: gxlightenabled[5]=true; break;
+			case GL_LIGHT6: gxlightenabled[6]=true; break;
+			case GL_LIGHT7: gxlightenabled[7]=true; break;
 		};
 }
 
@@ -393,7 +426,14 @@ void glDisable(GLenum type){
 				GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);			
 				GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 				break;
-				//how do disable specific light? GL_UnloadLightObj does not exist?
+			case GL_LIGHT0: gxlightenabled[0]=false; break;
+			case GL_LIGHT1: gxlightenabled[1]=false; break;
+			case GL_LIGHT2: gxlightenabled[2]=false; break;
+			case GL_LIGHT3: gxlightenabled[3]=false; break;
+			case GL_LIGHT4: gxlightenabled[4]=false; break;
+			case GL_LIGHT5: gxlightenabled[5]=false; break;
+			case GL_LIGHT6: gxlightenabled[6]=false; break;
+			case GL_LIGHT7: gxlightenabled[7]=false; break;
 		};
 }
 
