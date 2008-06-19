@@ -322,6 +322,11 @@ void glEnable(GLenum type){
 		{
 			case GL_DEPTH_TEST: depthtestenabled = GX_TRUE; break;
 			case GL_LIGHTING:
+
+				//<h0lyRS> did you try setting specular to channel GX_COLOR1A1, and diffuse to GX_COLOR0A0, so you can blend them anyway you want?
+				//this could add an extra color?
+				//one way is adding the specular light, other way is multiplying
+
 				//expand this to create opengl lighting mode.
 
 				//GX_SetChanCtrl(GX_COLOR0A0, TRUE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT0, GX_DF_CLAMP, GX_AF_SPOT);
@@ -330,9 +335,11 @@ void glEnable(GLenum type){
 
 				//making a lightmask (hmm there must be a more efficient way to do this, at least it should be somewhere else)
 				//<h0lyRS>	you can simply shift GX_LIGHT0 << lightnum
+				int countlights =0;
 				for (lightcounter =0; lightcounter < 8; lightcounter++){
 					if(gxlightenabled[lightcounter]){ //when light is enabled
 						gxlightmask |= (GX_LIGHT0 << lightcounter);
+						countlights++;
 					}
 				};
 /*
@@ -352,18 +359,23 @@ void glEnable(GLenum type){
 				}
 */
 
-				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_NONE); //uses (texture)perpixel colors (light works)
-//				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE); //vertex lighting (light does not work?)
 				
-
+				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_VTX,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_NONE); //uses (texture)perpixel colors (light works)
+				
+				//GX_SetChanCtrl(s32 channel,u8 enable,u8 ambsrc,u8 matsrc,u8 litmask,u8 diff_fn,u8 attn_fn)
+				//sets how an channel works
+			
 //	<RedShade>	GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG,GX_SRC_REG,GX_LIGHTNULL,GX_DF_NONE,GX_AF_NONE); = settings for that channel
 
-//	<RedShade>	1st = color that light will result in, second is (ON/OFF0
-//	<RedShade>	3rd = ambient color is on vertex, or uses global GX_SetChanAmbColor(GX_COLOR0A0, ambient);
-//	<RedShade>	light null = 00000000, light_1 = 00000001
-//	<RedShade>	4th = material color = vertex based, or global with setchanmatcolor
-//	<RedShade>	df = turning on/off difuse light
-//	<RedShade>	af = type of lighting (spetral/spotlight)
+//		s32 channel = color that light will result in
+//		u8 enable = second is (ON/OFF)
+//		u8 ambsrc = ambient color is on vertex (GX_SRC_VTX), or uses global GX_SetChanAmbColor(GX_COLOR0A0, ambient); (GX_SRC_REG)
+//		u8 matsrc = material color is based on vertex (GX_SRC_VTX), or global with GX_SetChanMatColor(GX_COLOR0A0, material); (GX_SRC_REG)
+//		u8 litmask = Defines what gx lights are used. light null = 00000000, light_1 = 00000001
+//		u8 diff_fn = turning on/off difuse light (material?)
+//		u8 attn_fn =  type of lighting (spetral/spotlight)
+
+//				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE); //vertex lighting (light does not work?)
 
 				//light setup?
 
@@ -381,7 +393,7 @@ void glEnable(GLenum type){
 
 				// Set up shader (write out what each step means)
 				GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
-				GX_SetNumTevStages(1);
+				GX_SetNumTevStages(1); //each extra color takes another stage?
 				
 				//color
 				GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
@@ -391,8 +403,8 @@ void glEnable(GLenum type){
 				
 				//tevorder
 				if (tex2denabled){
-					GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_TEXC, GX_CC_TEXC, GX_CC_TEXC, GX_CC_RASC); 
-					GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_TEXA, GX_CA_TEXA, GX_CA_TEXA, GX_CA_RASA);
+					GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_TEXC, GX_CC_RASC); //modulate
+					GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA, GX_CA_RASA);
 					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //texturing
 				}
 				else {
