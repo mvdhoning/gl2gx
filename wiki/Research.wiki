@@ -17,7 +17,9 @@ Info on GX:
   * http://www.gcdev.com/smf/index.php?topic=185.0 GX pixelshader assembler V0.2
   * http://www.tehskeen.com/forums/forumdisplay.php?f=86 ogc support forum
   * http://www.tehskeen.com/forums/showthread.php?t=7507 the rosetta stone to get lights working?
-  * http://www.google.com/patents?id=S-l-AAAAEBAJ Recirculating shade tree blender for a graphics system 
+  * http://www.google.com/patents?id=S-l-AAAAEBAJ Recirculating shade tree blender for a graphics system
+  * http://www.devkitpro.org/libogc/gx_8h.html doxygen documentation of gx
+  * http://devkitpro.cvs.sourceforge.net/devkitpro/libogc/libogc/gx.c?view=markup gx source
 
 Info on OpenGL:
   * http://www.opengl.org/documentation/red_book/
