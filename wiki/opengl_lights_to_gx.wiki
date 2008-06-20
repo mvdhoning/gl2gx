@@ -34,8 +34,10 @@ Maybe we are lucky as each colors term is added to each other and only then used
 So we might get away with just adding the 3 colors upfront and feed that as color to the light source
 But first let see how these terms are calculated.
 
-  * Ambient Term = light ambient `*` material ambient					= GXChanAmbColor ?							
-  * Diffuse Term = surface `*` (light diffuse `*` material diffuse)		light diffues = light color	material diffuse = GXChanMatColor		
+  * Ambient Term = light ambient `*` material ambient 
+for xg would go in GXChanAmbColor ?							
+  * Diffuse Term = surface `*` (light diffuse `*` material diffuse)
+	for gx this would be:	light diffues = light color and	material diffuse = GXChanMatColor		
   * Specular Term = normal.shininess `*` (light specular `*` material specular)	
 
 now we could use 3 light to emulate 1 opengl light but that would not be helpfull
