@@ -36,8 +36,10 @@ But first let see how these terms are calculated.
 
   * Ambient Term = light ambient `*` material ambient 
 for xg would go in GXChanAmbColor ?							
+
   * Diffuse Term = surface `*` (light diffuse `*` material diffuse)
-	for gx this would be:	light diffues = light color and	material diffuse = GXChanMatColor		
+	for gx this would be:	light diffues = light color and	material diffuse = GXChanMatColor	
+	
   * Specular Term = normal.shininess `*` (light specular `*` material specular)	
 
 now we could use 3 light to emulate 1 opengl light but that would not be helpfull
@@ -50,9 +52,9 @@ maybe some experiments with GXChanMatColor help with that? So light color to non
 
 also we have multiple tev stages.
 as we have used 2 channels we have to use 3 stages
-stage 1 = emissive + global ambient scaled by material as constant color (maybe 2 stages?)
-stage 2 = ambient + diffuse
-stage 3 = specular
+ * stage 1 = emissive + global ambient scaled by material as constant color (maybe 2 stages?)
+ * stage 2 = ambient + diffuse
+ * stage 3 = specular
 
 So this might do the trick in theory. Now on to practice...
 
