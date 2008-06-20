@@ -323,6 +323,53 @@ void glEnable(GLenum type){
 			case GL_DEPTH_TEST: depthtestenabled = GX_TRUE; break;
 			case GL_LIGHTING:
 
+				//getting opengl lights to work on gx
+				//
+				//xg has only one light color (a diffuse one)
+				//opengl lights have the following colors: diffuse, ambient and specular
+				//also opengl has a global ambient color independend of a individual light
+				//gx has 2 material colors: diffuse (mat) and ambient (can also be considered part of light?) 
+				//opengl material have the followning colors: diffuse, ambient, specular and emission
+				//so we (may) have problem (or call it a challenge)
+
+				//now how does opengl calculate light with all these colors
+				//vertex color	= material emission 
+				//				+ global ambient scaled by material ambient
+				//				+ ambient, diffuse, specular contributions from light(s), properly attinuated
+				//
+				//let us take these apart.
+				//
+				//material emission is like a constant color. So we can just add this in a tev stage. The only problem is how to add a color to a specific stage?)
+				//
+				//global ambient scaled by material ambient
+				//this is global ambient * material ambient so we can feed that result to an tev stage.
+				//
+				//Now comes the hard part as each color is used in the light calulation. And we only have once color in gx.
+				//Maybe we are lucky as each colors term is added to each other and only then used in light calculation
+				//So we might get away with just adding the 3 colors upfront and feed that as color to the light source
+				//But first let see how these terms are calculated.
+				//
+				//Ambient Term = light ambient * material ambient					= GXChanAmbColor ?							
+				//Diffuse Term = surface * (light diffuse * material diffuse)		light diffues = light color	material diffuse = GXChanMatColor		
+				//Specular Term = normal.shininess * (light specular * material specular)	
+				//
+				//now we could use 3 light to emulate 1 opengl light but that would not be helpfull
+				//so maybe there is an other way also gx material misses color components
+				//
+				//gx has max to channels
+				//each can be setup differently so we can have on chanel for normal diffuse
+				//and the other for specular. But we only have on light color so unless the specular color equals light color this it not usefull)
+				//maybe some experiments with GXChanMatColor help with that? So light color to none and all color CHANMatColor?
+				//
+				//also we have multiple tev stages.
+				//as we have used 2 channels we have to use 3 stages
+				//stage 1 = emissive + global ambient scaled by material as constant color (maybe 2 stages?)
+				//stage 2 = ambient + diffuse
+				//stage 3 = specular
+				//
+				//So this might do the trick in theory. Now on to practice...
+
+
 				//<h0lyRS> did you try setting specular to channel GX_COLOR1A1, and diffuse to GX_COLOR0A0, so you can blend them anyway you want?
 				//this could add an extra color?
 				//one way is adding the specular light, other way is multiplying
@@ -376,6 +423,10 @@ void glEnable(GLenum type){
 //		u8 attn_fn =  type of lighting (spetral/spotlight)
 
 //				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_VTX,GX_LIGHT0,GX_DF_CLAMP,GX_AF_NONE); //vertex lighting (light does not work?)
+
+
+				//GX_COLOR0 = rgb
+				//GX_COLOR0A0 = rgba
 
 				//light setup?
 
