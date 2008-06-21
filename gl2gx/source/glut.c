@@ -107,11 +107,12 @@ void glutInitDisplayMode(unsigned int mode) {
 	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);			
 	GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 
-	GX_SetViewport(0,0,rmode->fbWidth,rmode->efbHeight,0,1);
 }
 
-//void glutCreateWindow(const char *title) {
-//}
+int glutCreateWindow(const char *title) {
+	GX_SetViewport(0,0,rmode->fbWidth,rmode->efbHeight,0,1);
+	return 0;
+}
 
 void glutSwapBuffers(void) {
 		fb ^= 1;		// flip framebuffer				//swapbuffers(DC);
