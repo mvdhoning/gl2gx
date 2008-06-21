@@ -49,6 +49,7 @@ gx has at max 2 channels and we need both
 each channel can be setup differently so we can have one chanel for normal diffuse and ambient
 and the other for specular. But we only have on light color so unless the specular color equals light color this it not usefull)
 maybe some experiments with GXChanMatColor help with that? So light color to none and all color CHANMatColor? But that would break diffuse light?
+ if instead of using difflightcolor as light color and GXChanMatColor with diffmatcolor can i feed 1,1,1,1 as light color and do diffmatcolor*difflightcolor in GXSetChanMatColor?
 
 also we have multiple tev stages.
 as we have used 2 channels we have to use 3 stages
