@@ -22,17 +22,17 @@ typedef struct
 	float g;
 	float b;
 	float a;
-} ColorElement;
+} GXColorf;
 
 VertexElement _tempnormalelement;
 TexCoordElement _temptexcoordelement;
-ColorElement _tempcolorelement;
+GXColorf _tempcolorelement;
 
 //TODO: integrate in normal, vertex, texcoord and color in struct and place that in dynamic arrray
 VertexElement _normalelements[MAX_ARRAY]; //TODO: dynamic
 VertexElement _vertexelements[MAX_ARRAY]; //TODO: dynamic
 TexCoordElement _texcoordelements[MAX_ARRAY]; //TODO: dynamic
-ColorElement _colorelements[MAX_ARRAY]; //TODO: dynamic
+GXColorf _colorelements[MAX_ARRAY]; //TODO: dynamic
 
 int _numelements;
 int _type;
@@ -60,18 +60,19 @@ int gxcurlight; //test for light position
 //GXColor AmbientColor; //? is actually material?
 
 //light specs
-GXColor gxlightambientcolor[8];
-GXColor gxlightdiffusecolor[8];
-GXColor gxlightspecularcolor[8];
+GXColorf gxlightambientcolor[8];
+GXColorf gxlightdiffusecolor[8];
+GXColorf gxlightspecularcolor[8];
 
 //lightmodel specs
-GXColor gxglobalambientlightcolor;
+GXColorf gxglobalambientlightcolor;
 
 //material specs
-GXColor gxcurrentmaterialemissivecolor;
-GXColor gxcurrentmaterialambientcolor;
-GXColor gxcurrentmaterialdiffusecolor;
-GXColor gxcurrentmaterialspecularcolor;
+GXColorf gxcurrentmaterialemissivecolor;
+GXColorf gxcurrentmaterialambientcolor;
+GXColorf gxcurrentmaterialdiffusecolor;
+GXColorf gxcurrentmaterialspecularcolor;
+float gxcurrentmaterialshininess;
 
 /* textures */
 bool tex2denabled;

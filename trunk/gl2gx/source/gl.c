@@ -130,10 +130,10 @@ void glEnd(void) {
 
 	//use global ambient light together with current material ambient and add emissive material color
 	GXColor constcolor;
-	constcolor.r = gxcurrentmaterialemissivecolor.r + (gxcurrentmaterialambientcolor.r*gxglobalambientlightcolor.r);
-	constcolor.g = gxcurrentmaterialemissivecolor.g + (gxcurrentmaterialambientcolor.g*gxglobalambientlightcolor.g);
-	constcolor.b = gxcurrentmaterialemissivecolor.b + (gxcurrentmaterialambientcolor.b*gxglobalambientlightcolor.b);
-	constcolor.a = gxcurrentmaterialemissivecolor.a + (gxcurrentmaterialambientcolor.a*gxglobalambientlightcolor.a);
+	constcolor.r = (gxcurrentmaterialemissivecolor.r + (gxcurrentmaterialambientcolor.r*gxglobalambientlightcolor.r)) * 0xFF;
+	constcolor.g = (gxcurrentmaterialemissivecolor.g + (gxcurrentmaterialambientcolor.g*gxglobalambientlightcolor.g)) * 0xFF;
+	constcolor.b = (gxcurrentmaterialemissivecolor.b + (gxcurrentmaterialambientcolor.b*gxglobalambientlightcolor.b)) * 0xFF;
+	constcolor.a = (gxcurrentmaterialemissivecolor.a + (gxcurrentmaterialambientcolor.a*gxglobalambientlightcolor.a)) * 0xFF;
 	GX_SetTevColor(GX_TEVREG0, constcolor);
 
 	//first check if a lightdirtyflag is set (thanks ector) so we do not have to set up light every run
@@ -146,13 +146,27 @@ void glEnd(void) {
 		if(gxlightenabled[lightcounter]){ //when light is enabled
 
 			GXColor gxchanambient;
-			gxchanambient.r = gxcurrentmaterialambientcolor.r * gxlightambientcolor[lightcounter].r;
-			gxchanambient.g = gxcurrentmaterialambientcolor.g * gxlightambientcolor[lightcounter].g;
-			gxchanambient.b = gxcurrentmaterialambientcolor.b * gxlightambientcolor[lightcounter].b;
-			gxchanambient.a = gxcurrentmaterialambientcolor.a * gxlightambientcolor[lightcounter].a;
+			gxchanambient.r = (gxcurrentmaterialambientcolor.r * gxlightambientcolor[lightcounter].r) * 0xFF;
+			gxchanambient.g = (gxcurrentmaterialambientcolor.g * gxlightambientcolor[lightcounter].g) * 0xFF;
+			gxchanambient.b = (gxcurrentmaterialambientcolor.b * gxlightambientcolor[lightcounter].b) * 0xFF;
+			gxchanambient.a = (gxcurrentmaterialambientcolor.a * gxlightambientcolor[lightcounter].a) * 0xFF;
+
+			//GXColor gxchandiffuse;
+			//gxchandiffuse.r = gxcurrentmaterialdiffusecolor.r * gxlightdiffusecolor[lightcounter].r;
+			//gxchandiffuse.g = gxcurrentmaterialdiffusecolor.g * gxlightdiffusecolor[lightcounter].g;
+			//gxchandiffuse.b = gxcurrentmaterialdiffusecolor.b * gxlightdiffusecolor[lightcounter].b;
+			//gxchandiffuse.a = gxcurrentmaterialdiffusecolor.a * gxlightdiffusecolor[lightcounter].a;
 
 			GX_SetChanAmbColor(GX_COLOR0A0, gxchanambient ); 
-			GX_SetChanMatColor(GX_COLOR0A0, gxcurrentmaterialdiffusecolor); 
+			//GX_SetChanMatColor(GX_COLOR0A0, gxchandiffuse);
+			GXColor mdc;
+			mdc.r = gxcurrentmaterialdiffusecolor.r * 0xFF;
+			mdc.g = gxcurrentmaterialdiffusecolor.g * 0xFF;
+			mdc.b = gxcurrentmaterialdiffusecolor.b * 0xFF;
+			mdc.a = gxcurrentmaterialdiffusecolor.a * 0xFF;
+			GX_SetChanMatColor(GX_COLOR0A0, mdc ); 
+
+			GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
 
 			//postion
 			Vector lpos;
@@ -166,6 +180,10 @@ void glEnd(void) {
 			//dir attn spot TODO: these should be controleable from opengl
 			GX_InitLightDir(&gxlight[lightcounter], 0, -1, 0);	//shine down from y axis? Is this opengl default also?
 																//and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
+
+			//make this line optional? If on it disturbs diffuse light?
+			//GX_InitSpecularDir(&gxlight[lightcounter], 0, -1, 0); //needed to enable specular light
+
 			GX_InitLightDistAttn(&gxlight[lightcounter], 20.0f, 0.5f, GX_DA_MEDIUM);
 			GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
 
@@ -234,10 +252,10 @@ void glLightModelfv( GLenum pname, const GLfloat *params ){
 	switch(pname)
 	{
 		case GL_LIGHT_MODEL_AMBIENT: 
-			gxglobalambientlightcolor.r = params[0] * 0xff;
-			gxglobalambientlightcolor.g = params[1] * 0xff;
-			gxglobalambientlightcolor.b = params[2] * 0xff;
-			gxglobalambientlightcolor.a = params[3] * 0xff;
+			gxglobalambientlightcolor.r = params[0];
+			gxglobalambientlightcolor.g = params[1];
+			gxglobalambientlightcolor.b = params[2];
+			gxglobalambientlightcolor.a = params[3];
 			break;
 	}
 };
@@ -257,6 +275,7 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 	}
 
 	Vector lightPos={0.0F,0.0F,0.0F}; //TODO: make it opengl default light position
+	GXColor defcolor={0xFF,0xFF,0xFF,0xFF};
 	switch(pname)
 	{
 		case GL_POSITION: 
@@ -270,55 +289,69 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 			gxcurlight = lightNum;
 			break;
 		case GL_DIFFUSE:
-			gxlightdiffusecolor[lightNum].r = params[0] * 0xff;
-			gxlightdiffusecolor[lightNum].g = params[1] * 0xff;
-			gxlightdiffusecolor[lightNum].b = params[2] * 0xff;
-			gxlightdiffusecolor[lightNum].a = params[3] * 0xff;
-			GX_InitLightColor(&gxlight[lightNum],gxlightdiffusecolor[lightNum]); //move call to glend?;
+			gxlightdiffusecolor[lightNum].r = params[0];
+			gxlightdiffusecolor[lightNum].g = params[1];
+			gxlightdiffusecolor[lightNum].b = params[2];
+			gxlightdiffusecolor[lightNum].a = params[3];
+			//GX_InitLightColor(&gxlight[lightNum], defcolor);
+			GXColor ldc;
+			ldc.r = gxlightdiffusecolor[lightNum].r * 0xFF;
+			ldc.g = gxlightdiffusecolor[lightNum].g * 0xFF;
+			ldc.b = gxlightdiffusecolor[lightNum].b * 0xFF;
+			ldc.a = gxlightdiffusecolor[lightNum].a * 0xFF;
+			GX_InitLightColor(&gxlight[lightNum], ldc ); //move call to glend or init?;
+			
 			break;
 		case GL_AMBIENT:
-			gxlightambientcolor[lightNum].r = params[0] * 0xff;
-			gxlightambientcolor[lightNum].g = params[1] * 0xff;
-			gxlightambientcolor[lightNum].b = params[2] * 0xff;
-			gxlightambientcolor[lightNum].a = params[3] * 0xff;
+			gxlightambientcolor[lightNum].r = params[0];
+			gxlightambientcolor[lightNum].g = params[1];
+			gxlightambientcolor[lightNum].b = params[2];
+			gxlightambientcolor[lightNum].a = params[3];
 			break;
 		case GL_SPECULAR:
-			gxlightspecularcolor[lightNum].r = params[0] * 0xff;
-			gxlightspecularcolor[lightNum].g = params[1] * 0xff;
-			gxlightspecularcolor[lightNum].b = params[2] * 0xff;
-			gxlightspecularcolor[lightNum].a = params[3] * 0xff;
+			gxlightspecularcolor[lightNum].r = params[0];
+			gxlightspecularcolor[lightNum].g = params[1];
+			gxlightspecularcolor[lightNum].b = params[2];
+			gxlightspecularcolor[lightNum].a = params[3];
 			break;
 	}
 };
 
 /* material */
 
+void glMaterialf( GLenum face, GLenum pname, GLfloat param ){
+	switch(pname)
+	{
+		case GL_SHININESS: gxcurrentmaterialshininess = param; break;
+	}
+};
+
 void glMaterialfv( GLenum face, GLenum pname, const GLfloat *params ){
 	switch(pname)
 	{
 		case GL_EMISSION:
-			gxcurrentmaterialemissivecolor.r = params[0] * 0xff;
-			gxcurrentmaterialemissivecolor.g = params[1] * 0xff;
-			gxcurrentmaterialemissivecolor.b = params[2] * 0xff;
-			gxcurrentmaterialemissivecolor.a = params[3] * 0xff;
+			gxcurrentmaterialemissivecolor.r = params[0];
+			gxcurrentmaterialemissivecolor.g = params[1];
+			gxcurrentmaterialemissivecolor.b = params[2];
+			gxcurrentmaterialemissivecolor.a = params[3];
 		break;
 		case GL_DIFFUSE:
-			gxcurrentmaterialdiffusecolor.r = params[0] * 0xff;
-			gxcurrentmaterialdiffusecolor.g = params[1] * 0xff;
-			gxcurrentmaterialdiffusecolor.b = params[2] * 0xff;
-			gxcurrentmaterialdiffusecolor.a = params[3] * 0xff;
+			gxcurrentmaterialdiffusecolor.r = params[0];
+			gxcurrentmaterialdiffusecolor.g = params[1];
+			gxcurrentmaterialdiffusecolor.b = params[2];
+			gxcurrentmaterialdiffusecolor.a = params[3];
 		break;
 		case GL_AMBIENT:
-			gxcurrentmaterialambientcolor.r = params[0] * 0xff;
-			gxcurrentmaterialambientcolor.g = params[1] * 0xff;
-			gxcurrentmaterialambientcolor.b = params[2] * 0xff;
-			gxcurrentmaterialambientcolor.a = params[3] * 0xff;
+			gxcurrentmaterialambientcolor.r = params[0];
+			gxcurrentmaterialambientcolor.g = params[1];
+			gxcurrentmaterialambientcolor.b = params[2];
+			gxcurrentmaterialambientcolor.a = params[3];
 		break;
 		case GL_SPECULAR:
-			gxcurrentmaterialspecularcolor.r = params[0] * 0xff;
-			gxcurrentmaterialspecularcolor.g = params[1] * 0xff;
-			gxcurrentmaterialspecularcolor.b = params[2] * 0xff;
-			gxcurrentmaterialspecularcolor.a = params[3] * 0xff;
+			gxcurrentmaterialspecularcolor.r = params[0];
+			gxcurrentmaterialspecularcolor.g = params[1];
+			gxcurrentmaterialspecularcolor.b = params[2];
+			gxcurrentmaterialspecularcolor.a = params[3];
 		break;
 	}
 };
@@ -415,8 +448,8 @@ void glEnable(GLenum type){
 				//But first let see how these terms are calculated.
 				//
 				//Ambient Term = light ambient * material ambient					= GXChanAmbColor ?							
-				//Diffuse Term = surface * (light diffuse * material diffuse)		light diffues = light color	material diffuse = GXChanMatColor		
-				//Specular Term = normal.shininess * (light specular * material specular)	
+				//Diffuse Term = surface * (light diffuse * material diffuse)		light diffues = light color	| material diffuse = GXChanMatColor	(let gx handle this)	
+				//Specular Term = normal.shininess * (light specular * material specular)	(let gx handle this, but add lspec*mspec to GXChanMatColor)
 				//
 				//now we could use 3 light to emulate 1 opengl light but that would not be helpfull
 				//so maybe there is an other way also gx material misses color components
@@ -472,9 +505,17 @@ void glEnable(GLenum type){
 				}
 */
 
+				GX_SetNumChans(1); //use/enable one light (the first?)
+
+				//channel 1 (ambient + diffuse)
+				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_NONE); //uses (texture)perpixel colors (light works)
 				
-				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_VTX,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_NONE); //uses (texture)perpixel colors (light works)
-				
+				//channel 2 (specular)
+				//GXColor white = { 0, 0, 255, 255 };
+				//GX_SetChanMatColor(GX_COLOR1, white); // use white as test color
+				//GX_SetChanCtrl(GX_COLOR1,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_NONE,GX_AF_SPEC); //uses (texture)perpixel colors (light works)
+
+
 				//GX_SetChanCtrl(s32 channel,u8 enable,u8 ambsrc,u8 matsrc,u8 litmask,u8 diff_fn,u8 attn_fn)
 				//sets how an channel works
 			
@@ -496,7 +537,7 @@ void glEnable(GLenum type){
 
 				//light setup?
 
-				GX_SetNumChans(1); //use/enable one light (the first?)
+				
 				
 				//GX_SetChanCtrl(GX_COLOR0A0, TRUE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT0, GX_DF_SIGNED, GX_AF_NONE); //write out what this does
 																//uses vertex? then what is GX_SRC_REG
@@ -512,11 +553,11 @@ void glEnable(GLenum type){
 				//How does this relate to light color? e.g. in opengl both light and material have diffuse and ambient component
 
 				// Set up shader (write out what each step means)
-				GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
-				
 				GX_SetNumTevStages(2); //each extra color takes another stage?
 				
 				//stage 1
+
+				GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 
 				//color
 				GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
@@ -526,8 +567,12 @@ void glEnable(GLenum type){
 				
 				//tevorder
 				if (tex2denabled){
-					GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_TEXC, GX_CC_RASC); //modulate
-					GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA, GX_CA_RASA);
+					GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_RASC, GX_CC_ZERO); //shagkur method
+					GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA, GX_CA_ZERO); //shagkur method
+
+					//GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_TEXC, GX_CC_RASC); //modulate
+					//GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA, GX_CA_RASA); //modulate
+
 					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //texturing
 				}
 				else {
@@ -540,11 +585,13 @@ void glEnable(GLenum type){
 				//stage 2 (emissive material and global ambient light)
 
 				//color
-				GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_ONE, GX_CC_CPREV); //add constant color to color from previous stage
+				GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0); //shagkur method
+				//GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_ONE, GX_CC_CPREV); //add constant color to color from previous stage
 				GX_SetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 				
 				//alpha
-				GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CC_ONE, GX_CA_APREV); //add constant alpha to alpha from previous stage
+				GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0); //shagkur method
+				//GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CC_ONE, GX_CA_APREV); //add constant alpha to alpha from previous stage
 				GX_SetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 				
 				//tevorder
