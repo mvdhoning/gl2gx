@@ -57,7 +57,21 @@ VertexElement gxlightpos[8]; //light position for each light
 VertexElement gxlightdir[8]; //light direction for each light
 bool gxlightenabled[8]; //is specific light enabled
 int gxcurlight; //test for light position
-GXColor AmbientColor; //? is actually material?
+//GXColor AmbientColor; //? is actually material?
+
+//light specs
+GXColor gxlightambientcolor[8];
+GXColor gxlightdiffusecolor[8];
+GXColor gxlightspecularcolor[8];
+
+//lightmodel specs
+GXColor gxglobalambientlightcolor;
+
+//material specs
+GXColor gxcurrentmaterialemissivecolor;
+GXColor gxcurrentmaterialambientcolor;
+GXColor gxcurrentmaterialdiffusecolor;
+GXColor gxcurrentmaterialspecularcolor;
 
 /* textures */
 bool tex2denabled;
