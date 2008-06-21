@@ -200,8 +200,16 @@ void glutDisplayFunc(void (*func)(void)){
 	displayfunc = func;
 }
 
+void (*idlefunc)(void);
+
+void glutIdleFunc(void (*func)(void)){
+	idlefunc = func;
+}
+
 void glutMainLoop(void){
-	while(1) {
-		displayfunc();
-	}
+     
+     displayfunc();
+	 while(1) {
+              idlefunc();
+	 }
 }
