@@ -117,6 +117,7 @@ void glBegin(GLenum type) {
 void glEnd(void) {
 
 	Mtx mvi;
+	Mtx mv;
 
 	// load the modelview matrix into matrix memory
 	guMtxConcat(view,model,modelview);
@@ -178,8 +179,18 @@ void glEnd(void) {
 			GX_InitLightPos(&gxlight[lightcounter], lpos.x, lpos.y, lpos.z); //feed corrected coord to light pos
 			
 			//dir attn spot TODO: these should be controleable from opengl
-			GX_InitLightDir(&gxlight[lightcounter], 0, -1, 0);	//shine down from y axis? Is this opengl default also?
-																//and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
+			
+			Vector ldir = { 0, -1, 0 };
+            guMtxConcat(view,model,mv);
+            guMtxInverse(mv,mvi);
+            guMtxTranspose(mvi,mv);
+            guVecMultiply(mv,&ldir,&ldir); //update light position by current view matrix
+	        //dir attn spot TODO: these should be controleable from opengl
+            GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //shine down from y axis? Is this opengl default also?
+            //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
+			
+			//GX_InitLightDir(&gxlight[lightcounter], 0, -1, 0);	//shine down from y axis? Is this opengl default also?
+			//													//and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
 
 			//make this line optional? If on it disturbs diffuse light?
 			//GX_InitSpecularDir(&gxlight[lightcounter], 0, -1, 0); //needed to enable specular light
