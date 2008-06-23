@@ -118,15 +118,16 @@ void glEnd(void) {
 
 	Mtx mvi;
 	Mtx mv;
+//	Mtx inversemodelview;
 
 	// load the modelview matrix into matrix memory
 	guMtxConcat(view,model,modelview);
 	GX_LoadPosMtxImm(modelview, GX_PNMTX0);
 
 	//for normals first calculate normal matrix (thanks shagkur)
-	guMtxInverse(modelview,mvi);
-	guMtxTranspose(mvi,modelview);
-	GX_LoadNrmMtxImm(modelview,GX_PNMTX0);
+    guMtxInverse(modelview,mvi); 
+    guMtxTranspose(mvi,modelview); 
+    GX_LoadNrmMtxImm(modelview,GX_PNMTX0); 
 
 
 	//use global ambient light together with current material ambient and add emissive material color
@@ -174,9 +175,10 @@ void glEnd(void) {
 			mdc.a = gxcurrentmaterialdiffusecolor.a * 0xFF;
 			GX_SetChanMatColor(GX_COLOR0A0, mdc ); 
 
-			//GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
+//			GX_InitLightShininess(&gxlight[lightcounter], 2.0);
 
 			//postion
+	        guMtxConcat(view,model,mv);
 			Vector lpos;
 			lpos.x = gxlightpos[lightcounter].x;
 			lpos.y = gxlightpos[lightcounter].y;
@@ -187,13 +189,13 @@ void glEnd(void) {
 			
 			//dir attn spot TODO: these should be controleable from opengl
 			
-			Vector ldir = { 0, 0, 1 };
-            guMtxConcat(view,model,mv);
-            guMtxInverse(mv,mvi);
-            guMtxTranspose(mvi,mv);
-            guVecMultiply(mv,&ldir,&ldir); //update light position by current view matrix
+			Vector ldir = { 0, 0, -1 };
+            //guMtxConcat(view,model,mv);
+            guMtxInverse(view,mvi);
+            //guMtxTranspose(mvi,mv);
+            guVecMultiply(mvi,&ldir,&ldir); //update light position by current view matrix
 	        //dir attn spot TODO: these should be controleable from opengl
-            //GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //shine down from y axis? Is this opengl default also?
+            GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //shine down from y axis? Is this opengl default also?
             //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
 			
 			//GX_InitLightDir(&gxlight[lightcounter], 0, -1, 0);	//shine down from y axis? Is this opengl default also?
@@ -202,7 +204,7 @@ void glEnd(void) {
 			//make this line optional? If on it disturbs diffuse light?
 			//GX_InitSpecularDir(&gxlight[lightcounter], 0, -1, 0); //needed to enable specular light
 
-			GX_InitLightDistAttn(&gxlight[lightcounter], 20.0f, 0.5f, GX_DA_MEDIUM);
+//			GX_InitLightDistAttn(&gxlight[lightcounter], 20.0f, 0.5f, GX_DA_MEDIUM);
 //			GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
 
 			//Load the light up
@@ -579,13 +581,13 @@ void glEnable(GLenum type){
 				GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0); //shagkur method
 				//GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0); 
 				//GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_ONE, GX_CC_CPREV); //add constant color to color from previous stage
-				GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 				
 				//alpha
 				GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0); //shagkur method
 				//GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_ZERO, GX_CA_A0);
 				//GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CC_ONE, GX_CA_APREV); //add constant alpha to alpha from previous stage
-				GX_SetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GX_SetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 				
 				//tevorder
 				GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //?
@@ -597,12 +599,12 @@ void glEnable(GLenum type){
 				//color
 				GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C1); //shagkur method
 				//GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_C1, GX_CC_ONE, GX_CC_CPREV); //add constant color to color from previous stage
-				GX_SetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GX_SetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 				
 				//alpha
 				GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A1); //shagkur method
 				//GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_A1, GX_CC_ONE, GX_CA_APREV); //add constant alpha to alpha from previous stage
-				GX_SetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GX_SetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 				
 				//tevorder
 				GX_SetTevOrder(GX_TEVSTAGE1, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //?
@@ -614,10 +616,10 @@ void glEnable(GLenum type){
 				GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 
 				//color
-				GX_SetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GX_SetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 				
 				//alpha
-				GX_SetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GX_SetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
 				
 				//tevorder
 				if (tex2denabled){                                
@@ -630,7 +632,7 @@ void glEnable(GLenum type){
 					GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //texturing
 				}
 				else {
-					GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_ONE, GX_CC_RASC, GX_CC_ZERO); //vertex color?
+					GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_HALF, GX_CC_RASC, GX_CC_ZERO); //vertex color?
 					GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_ZERO, GX_CA_RASA, GX_CA_ZERO);
 					GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //no texturing
 				};				
