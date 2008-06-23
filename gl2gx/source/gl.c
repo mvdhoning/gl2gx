@@ -174,7 +174,7 @@ void glEnd(void) {
 			mdc.a = gxcurrentmaterialdiffusecolor.a * 0xFF;
 			GX_SetChanMatColor(GX_COLOR0A0, mdc ); 
 
-			GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
+			//GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
 
 			//postion
 			Vector lpos;
@@ -187,13 +187,13 @@ void glEnd(void) {
 			
 			//dir attn spot TODO: these should be controleable from opengl
 			
-			Vector ldir = { 0, 0, -1 };
+			Vector ldir = { 0, 0, 1 };
             guMtxConcat(view,model,mv);
             guMtxInverse(mv,mvi);
             guMtxTranspose(mvi,mv);
             guVecMultiply(mv,&ldir,&ldir); //update light position by current view matrix
 	        //dir attn spot TODO: these should be controleable from opengl
-            GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //shine down from y axis? Is this opengl default also?
+            //GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //shine down from y axis? Is this opengl default also?
             //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
 			
 			//GX_InitLightDir(&gxlight[lightcounter], 0, -1, 0);	//shine down from y axis? Is this opengl default also?
@@ -202,7 +202,7 @@ void glEnd(void) {
 			//make this line optional? If on it disturbs diffuse light?
 			//GX_InitSpecularDir(&gxlight[lightcounter], 0, -1, 0); //needed to enable specular light
 
-//			GX_InitLightDistAttn(&gxlight[lightcounter], 20.0f, 0.5f, GX_DA_MEDIUM);
+			GX_InitLightDistAttn(&gxlight[lightcounter], 20.0f, 0.5f, GX_DA_MEDIUM);
 //			GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
 
 			//Load the light up
