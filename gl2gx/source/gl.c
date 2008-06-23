@@ -115,6 +115,8 @@ void glBegin(GLenum type) {
 }
 
 void glEnd(void) {
+     
+     GX_SetCullMode(GX_CULL_FRONT);
 
 	Mtx mvi;
 	Mtx mv;
@@ -155,10 +157,10 @@ void glEnd(void) {
 		if(gxlightenabled[lightcounter]){ //when light is enabled
 
 			GXColor gxchanambient;
-			gxchanambient.r = (gxcurrentmaterialambientcolor.r * gxlightambientcolor[lightcounter].r) * 0xFF;
-			gxchanambient.g = (gxcurrentmaterialambientcolor.g * gxlightambientcolor[lightcounter].g) * 0xFF;
-			gxchanambient.b = (gxcurrentmaterialambientcolor.b * gxlightambientcolor[lightcounter].b) * 0xFF;
-			gxchanambient.a = (gxcurrentmaterialambientcolor.a * gxlightambientcolor[lightcounter].a) * 0xFF;
+			gxchanambient.r = ((gxcurrentmaterialambientcolor.r * gxlightambientcolor[lightcounter].r) * 0xFF) /2;
+			gxchanambient.g = ((gxcurrentmaterialambientcolor.g * gxlightambientcolor[lightcounter].g) * 0xFF) /2;
+			gxchanambient.b = ((gxcurrentmaterialambientcolor.b * gxlightambientcolor[lightcounter].b) * 0xFF) /2;
+			gxchanambient.a = ((gxcurrentmaterialambientcolor.a * gxlightambientcolor[lightcounter].a) * 0xFF) /2;
 
 			//GXColor gxchandiffuse;
 			//gxchandiffuse.r = gxcurrentmaterialdiffusecolor.r * gxlightdiffusecolor[lightcounter].r;
@@ -169,10 +171,10 @@ void glEnd(void) {
 			GX_SetChanAmbColor(GX_COLOR0A0, gxchanambient ); 
 			//GX_SetChanMatColor(GX_COLOR0A0, gxchandiffuse);
 			GXColor mdc;
-			mdc.r = gxcurrentmaterialdiffusecolor.r * 0xFF;
-			mdc.g = gxcurrentmaterialdiffusecolor.g * 0xFF;
-			mdc.b = gxcurrentmaterialdiffusecolor.b * 0xFF;
-			mdc.a = gxcurrentmaterialdiffusecolor.a * 0xFF;
+			mdc.r = (gxcurrentmaterialdiffusecolor.r * 0xFF) / 2;
+			mdc.g = (gxcurrentmaterialdiffusecolor.g * 0xFF) / 2;
+			mdc.b = (gxcurrentmaterialdiffusecolor.b * 0xFF) / 2;
+			mdc.a = (gxcurrentmaterialdiffusecolor.a * 0xFF) / 2;
 			GX_SetChanMatColor(GX_COLOR0A0, mdc ); 
 
 //			GX_InitLightShininess(&gxlight[lightcounter], 2.0);
@@ -195,7 +197,7 @@ void glEnd(void) {
             //guMtxTranspose(mvi,mv);
             guVecMultiply(mvi,&ldir,&ldir); //update light position by current view matrix
 	        //dir attn spot TODO: these should be controleable from opengl
-            GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //shine down from y axis? Is this opengl default also?
+            //GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //shine down from y axis? Is this opengl default also?
             //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
 			
 			//GX_InitLightDir(&gxlight[lightcounter], 0, -1, 0);	//shine down from y axis? Is this opengl default also?
@@ -315,10 +317,10 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 			gxlightdiffusecolor[lightNum].a = params[3];
 			//GX_InitLightColor(&gxlight[lightNum], defcolor);
 			GXColor ldc;
-			ldc.r = gxlightdiffusecolor[lightNum].r * 0xFF;
-			ldc.g = gxlightdiffusecolor[lightNum].g * 0xFF;
-			ldc.b = gxlightdiffusecolor[lightNum].b * 0xFF;
-			ldc.a = gxlightdiffusecolor[lightNum].a * 0xFF;
+			ldc.r = (gxlightdiffusecolor[lightNum].r * 0xFF) / 2;
+			ldc.g = (gxlightdiffusecolor[lightNum].g * 0xFF) / 2;
+			ldc.b = (gxlightdiffusecolor[lightNum].b * 0xFF) / 2;
+			ldc.a = (gxlightdiffusecolor[lightNum].a * 0xFF) / 2;
 			GX_InitLightColor(&gxlight[lightNum], ldc ); //move call to glend or init?;
 			
 			break;
@@ -528,7 +530,7 @@ void glEnable(GLenum type){
 				GX_SetNumChans(1); //use/enable one light (the first?)
 
 				//channel 1 (ambient + diffuse)
-				GX_SetChanCtrl(GX_COLOR0A0,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_NONE); //uses (texture)perpixel colors (light works)
+				GX_SetChanCtrl(GX_COLOR0A0,GX_TRUE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_NONE); //uses (texture)perpixel colors (light works)
 				
 				//channel 2 (specular)
 				//GXColor white = { 0, 0, 255, 255 };
@@ -574,7 +576,23 @@ void glEnable(GLenum type){
 
 				// Set up shader (write out what each step means)
 				GX_SetNumTevStages(3); //each extra color takes another stage?
+				//GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+				//GX_SetTevOrder(GX_TEVSTAGE0,GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 				
+    //GX_SetNumTexGens(1);
+	//GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+
+	// Set up shader
+	//GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+	//GX_SetNumTevStages(1);
+	//GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_DIVIDE_2, GX_FALSE, GX_TEVPREV);
+	//GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+	//GX_SetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_DIVIDE_2, GX_FALSE, GX_TEVPREV);
+	//GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
+	//GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	//GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				
+
 				//stage 1 (global ambient light)
 
 				//color
@@ -623,18 +641,18 @@ void glEnable(GLenum type){
 				
 				//tevorder
 				if (tex2denabled){                                
-					GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC); 
-					GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA); 
+					//GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC); 
+					//GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA); 
 
-					//GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_TEXC, GX_CC_RASC); //modulate
-					//GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA, GX_CA_RASA); //modulate
+					GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_ONE, GX_CC_TEXC, GX_CC_RASC); //modulate
+					GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA); //modulate
 
 					GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //texturing
 				}
-				else {
-					GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_HALF, GX_CC_RASC, GX_CC_ZERO); //vertex color?
-					GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_ZERO, GX_CA_RASA, GX_CA_ZERO);
-					GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //no texturing
+				else { 
+					GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_ONE, GX_CC_RASC, GX_CC_ZERO); //vertex color?
+					GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_KONST, GX_CA_RASA, GX_CA_ZERO);
+					GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0); //no texturing
 				};				
 				GX_SetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
 				

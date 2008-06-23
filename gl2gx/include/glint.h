@@ -3,6 +3,8 @@
 //TODO: rewrite to support dynamic arrays
 #define MAX_ARRAY 1000
 
+#define LARGE_NUMBER 1048576
+
 typedef struct 
 {
 	float x;
