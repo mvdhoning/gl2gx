@@ -138,6 +138,7 @@ void glutInitDisplayMode(unsigned int mode) {
 
 int glutCreateWindow(const char *title) {
 	GX_SetViewport(0,0,rmode->fbWidth,rmode->efbHeight,0,1);
+	gluLookAt(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, -1.0F, 0.0F, 1.0F, 0.0F); //setup opengl compat coord system
 	return 0;
 }
 
