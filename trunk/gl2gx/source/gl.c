@@ -131,11 +131,18 @@ void glEnd(void) {
 
 	//use global ambient light together with current material ambient and add emissive material color
 	GXColor constcolor;
-	constcolor.r = (gxcurrentmaterialemissivecolor.r + (gxcurrentmaterialambientcolor.r*gxglobalambientlightcolor.r)) * 0xFF;
-	constcolor.g = (gxcurrentmaterialemissivecolor.g + (gxcurrentmaterialambientcolor.g*gxglobalambientlightcolor.g)) * 0xFF;
-	constcolor.b = (gxcurrentmaterialemissivecolor.b + (gxcurrentmaterialambientcolor.b*gxglobalambientlightcolor.b)) * 0xFF;
-	constcolor.a = (gxcurrentmaterialemissivecolor.a + (gxcurrentmaterialambientcolor.a*gxglobalambientlightcolor.a)) * 0xFF;
+	constcolor.r = (gxcurrentmaterialambientcolor.r*gxglobalambientlightcolor.r) * 0xFF;
+	constcolor.g = (gxcurrentmaterialambientcolor.g*gxglobalambientlightcolor.g) * 0xFF;
+	constcolor.b = (gxcurrentmaterialambientcolor.b*gxglobalambientlightcolor.b) * 0xFF;
+	constcolor.a = (gxcurrentmaterialambientcolor.a*gxglobalambientlightcolor.a) * 0xFF;
 	GX_SetTevColor(GX_TEVREG0, constcolor);
+	
+	GXColor emiscolor;
+	emiscolor.r = gxcurrentmaterialemissivecolor.r * 0xFF;
+	emiscolor.g = gxcurrentmaterialemissivecolor.g * 0xFF;
+	emiscolor.b = gxcurrentmaterialemissivecolor.b * 0xFF;
+	emiscolor.a = gxcurrentmaterialemissivecolor.a * 0xFF;
+	GX_SetTevColor(GX_TEVREG1, emiscolor);
 
 	//first check if a lightdirtyflag is set (thanks ector) so we do not have to set up light every run
 	//also usefull on matrices etc.
@@ -180,7 +187,7 @@ void glEnd(void) {
 			
 			//dir attn spot TODO: these should be controleable from opengl
 			
-			Vector ldir = { 0, -1, 0 };
+			Vector ldir = { 0, 0, -1 };
             guMtxConcat(view,model,mv);
             guMtxInverse(mv,mvi);
             guMtxTranspose(mvi,mv);
@@ -195,8 +202,8 @@ void glEnd(void) {
 			//make this line optional? If on it disturbs diffuse light?
 			//GX_InitSpecularDir(&gxlight[lightcounter], 0, -1, 0); //needed to enable specular light
 
-			GX_InitLightDistAttn(&gxlight[lightcounter], 20.0f, 0.5f, GX_DA_MEDIUM);
-			GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
+//			GX_InitLightDistAttn(&gxlight[lightcounter], 20.0f, 0.5f, GX_DA_MEDIUM);
+//			GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
 
 			//Load the light up
 			switch (lightcounter){
@@ -564,51 +571,72 @@ void glEnable(GLenum type){
 				//How does this relate to light color? e.g. in opengl both light and material have diffuse and ambient component
 
 				// Set up shader (write out what each step means)
-				GX_SetNumTevStages(2); //each extra color takes another stage?
+				GX_SetNumTevStages(3); //each extra color takes another stage?
 				
-				//stage 1
-
-				GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+				//stage 1 (global ambient light)
 
 				//color
+				GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0); //shagkur method
+				//GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0); 
+				//GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_ONE, GX_CC_CPREV); //add constant color to color from previous stage
 				GX_SetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
 				
 				//alpha
+				GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0); //shagkur method
+				//GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_ZERO, GX_CA_A0);
+				//GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CC_ONE, GX_CA_APREV); //add constant alpha to alpha from previous stage
 				GX_SetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
 				
 				//tevorder
-				if (tex2denabled){
-					GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_RASC, GX_CC_ZERO); //shagkur method
-					GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA, GX_CA_ZERO); //shagkur method
+				GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //?
 
-					//GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_TEXC, GX_CC_RASC); //modulate
-					//GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA, GX_CA_RASA); //modulate
+				//end stage 1
 
-					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //texturing
-				}
-				else {
-					GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC); //vertex color?
-					GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
-					GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //no texturing
-				};				
-				GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-
-				//stage 2 (emissive material and global ambient light)
+				//stage 2 (global ambient light)
 
 				//color
-				GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0); //shagkur method
-				//GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_ONE, GX_CC_CPREV); //add constant color to color from previous stage
-				GX_SetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+				GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C1); //shagkur method
+				//GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_C1, GX_CC_ONE, GX_CC_CPREV); //add constant color to color from previous stage
+				GX_SetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
 				
 				//alpha
-				GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0); //shagkur method
-				//GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CC_ONE, GX_CA_APREV); //add constant alpha to alpha from previous stage
-				GX_SetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+				GX_SetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A1); //shagkur method
+				//GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_A1, GX_CC_ONE, GX_CA_APREV); //add constant alpha to alpha from previous stage
+				GX_SetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
 				
 				//tevorder
 				GX_SetTevOrder(GX_TEVSTAGE1, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //?
 
 				//end stage 2
+				
+				//stage 3
+
+				GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+
+				//color
+				GX_SetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				
+				//alpha
+				GX_SetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				
+				//tevorder
+				if (tex2denabled){                                
+					GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC); 
+					GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA); 
+
+					//GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_TEXC, GX_CC_RASC); //modulate
+					//GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA, GX_CA_RASA); //modulate
+
+					GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //texturing
+				}
+				else {
+					GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_ONE, GX_CC_RASC, GX_CC_ZERO); //vertex color?
+					GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_ZERO, GX_CA_RASA, GX_CA_ZERO);
+					GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //no texturing
+				};				
+				GX_SetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				
+				// end stage 3
 
 				break;
 			case GL_TEXTURE_2D:
@@ -634,8 +662,17 @@ void glDisable(GLenum type){
 			case GL_DEPTH_TEST: depthtestenabled = GX_FALSE; break;
 			case GL_LIGHTING:
 				GX_SetNumChans(1); //keep this at one all time?
-				GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
-				GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG,GX_SRC_VTX,GX_LIGHTNULL,GX_DF_NONE,GX_AF_NONE); //how to disable ligting?
+				GX_SetNumTevStages(1);
+				if (tex2denabled){
+				  GX_SetNumTexGens(1); //multitexturing so set to 1 for now
+				  GX_SetTevOp(GX_TEVSTAGE0,GX_REPLACE);
+				  GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);                
+                }
+                else
+                {
+				 GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+				 GX_SetChanCtrl(GX_COLOR0A0,GX_DISABLE,GX_SRC_REG,GX_SRC_VTX,GX_LIGHTNULL,GX_DF_NONE,GX_AF_NONE);
+                }
 				break;
 			case GL_TEXTURE_2D:
 				tex2denabled = false;

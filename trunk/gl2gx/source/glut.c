@@ -27,9 +27,36 @@ void glutInit(int *argcp, char **argv) {
  
 	rmode = VIDEO_GetPreferredMode(NULL);
 	
+	//initialize gl default values
 	glColor3f(1.0F,1.0F,1.0F);
-
-
+	
+	int i = 0;
+	for (i=0;i<8;i++){
+        gxlightambientcolor[i].r=0;
+        gxlightambientcolor[i].g=0;
+        gxlightambientcolor[i].b=0;
+        gxlightambientcolor[i].a=1;
+        gxlightdiffusecolor[i].r=0;
+        gxlightdiffusecolor[i].g=0;
+        gxlightdiffusecolor[i].b=0;
+        gxlightdiffusecolor[i].a=0;
+        gxlightspecularcolor[i].r=0;
+        gxlightspecularcolor[i].g=0;
+        gxlightspecularcolor[i].b=0;
+        gxlightspecularcolor[i].a=0;
+    }
+    
+    gxlightdiffusecolor[0].r=1;
+    gxlightdiffusecolor[0].g=1;
+    gxlightdiffusecolor[0].b=1;
+    gxlightdiffusecolor[0].a=1;
+        
+    gxlightspecularcolor[0].r=1;
+    gxlightspecularcolor[0].g=1;
+    gxlightspecularcolor[0].b=1;
+    gxlightspecularcolor[0].a=1;
+    
+    tex2denabled = false;
 
 	//VIDEO_ClearFrameBuffer(GXRModeObj *rmode,void *fb,u32 color);?
 
