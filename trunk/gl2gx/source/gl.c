@@ -575,7 +575,9 @@ void glEnable(GLenum type){
 				//How does this relate to light color? e.g. in opengl both light and material have diffuse and ambient component
 
 				// Set up shader (write out what each step means)
-				GX_SetNumTevStages(3); //each extra color takes another stage?
+				GX_SetNumTevStages(4); //each extra color takes another stage?
+				
+					
 				//GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 				//GX_SetTevOrder(GX_TEVSTAGE0,GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 				
@@ -593,7 +595,12 @@ void glEnable(GLenum type){
 	//GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 				
 
+
+                
+
 				//stage 1 (global ambient light)
+				
+				//GX_SetTevClampMode(GX_TEVSTAGE0, GX_TC_EQ);
 
 				//color
 				GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0); //shagkur method
@@ -613,6 +620,8 @@ void glEnable(GLenum type){
 				//end stage 1
 
 				//stage 2 (global ambient light)
+				
+				//GX_SetTevClampMode(GX_TEVSTAGE1, GX_TC_EQ);
 
 				//color
 				GX_SetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C1); //shagkur method
@@ -630,6 +639,9 @@ void glEnable(GLenum type){
 				//end stage 2
 				
 				//stage 3
+				
+                /*
+				GX_SetTevClampMode(GX_TEVSTAGE2, GX_TC_EQ);
 
 				GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 
@@ -655,8 +667,28 @@ void glEnable(GLenum type){
 					GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0); //no texturing
 				};				
 				GX_SetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				*/
+				
+				//color
+				GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+				GX_SetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+				
+				//alpha
+				GX_SetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CC_RASA); 
+				GX_SetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+				
+				//tevorder
+				GX_SetTevOrder(GX_TEVSTAGE2, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0); //?
 				
 				// end stage 3
+				
+				//putt textures in its own additional stage
+				// stage 4 (textures)
+				
+				GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //texturing
+				GX_SetTevOp(GX_TEVSTAGE3, GX_MODULATE);
+
+                // end stage 4
 
 				break;
 			case GL_TEXTURE_2D:
