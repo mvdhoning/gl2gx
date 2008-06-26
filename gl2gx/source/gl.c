@@ -209,9 +209,13 @@ void glEnd(void) {
 			//make this line optional? If on it disturbs diffuse light?
 			//GX_InitSpecularDir(&gxlight[lightcounter], 0, -1, 0); //needed to enable specular light
 
+            //feed opengl defaults to this?
 			GX_InitLightDistAttn(&gxlight[lightcounter], 100.0f, 0.5f, GX_DA_GENTLE);
+			
 			//GX_InitLightSpot(&gxlight[lightcounter], 30.0f, GX_SP_COS2); //not this is not a spot light
-			GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
+			
+            //feed opengl defaults to this?
+            GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
 
 			//Load the light up
 			switch (lightcounter){
@@ -579,7 +583,14 @@ void glEnable(GLenum type){
 				//How does this relate to light color? e.g. in opengl both light and material have diffuse and ambient component
 
 				// Set up shader (write out what each step means)
-				GX_SetNumTevStages(3); //each extra color takes another stage?
+				
+				int numtevstages = 0;
+				if (tex2denabled){ 
+                  numtevstages = 4;
+                } else {
+                  numtevstages = 3;
+                }
+				GX_SetNumTevStages(numtevstages); //each extra color takes another stage?
 				
 					
 				//GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
