@@ -129,7 +129,7 @@ void glEnd(void) {
 	//for normals first calculate normal matrix (thanks shagkur)
     guMtxInverse(modelview,mvi); 
     guMtxTranspose(mvi,modelview); 
-    GX_LoadNrmMtxImm(modelview,GX_PNMTX0); 
+    GX_LoadNrmMtxImm(modelview,GX_PNMTX0); //experimtal leave out (hmm works good?)
 
 
 	//use global ambient light together with current material ambient and add emissive material color
@@ -157,10 +157,10 @@ void glEnd(void) {
 		if(gxlightenabled[lightcounter]){ //when light is enabled
 
 			GXColor gxchanambient;
-			gxchanambient.r = ((gxcurrentmaterialambientcolor.r * gxlightambientcolor[lightcounter].r) * 0xFF) /2;
-			gxchanambient.g = ((gxcurrentmaterialambientcolor.g * gxlightambientcolor[lightcounter].g) * 0xFF) /2;
-			gxchanambient.b = ((gxcurrentmaterialambientcolor.b * gxlightambientcolor[lightcounter].b) * 0xFF) /2;
-			gxchanambient.a = ((gxcurrentmaterialambientcolor.a * gxlightambientcolor[lightcounter].a) * 0xFF) /2;
+			gxchanambient.r = ((gxcurrentmaterialambientcolor.r * gxlightambientcolor[lightcounter].r) * 0xFF);// /2;
+			gxchanambient.g = ((gxcurrentmaterialambientcolor.g * gxlightambientcolor[lightcounter].g) * 0xFF);// /2;
+			gxchanambient.b = ((gxcurrentmaterialambientcolor.b * gxlightambientcolor[lightcounter].b) * 0xFF);// /2;
+			gxchanambient.a = ((gxcurrentmaterialambientcolor.a * gxlightambientcolor[lightcounter].a) * 0xFF);// /2;
 
 			//GXColor gxchandiffuse;
 			//gxchandiffuse.r = gxcurrentmaterialdiffusecolor.r * gxlightdiffusecolor[lightcounter].r;
@@ -171,10 +171,10 @@ void glEnd(void) {
 			GX_SetChanAmbColor(GX_COLOR0A0, gxchanambient ); 
 			//GX_SetChanMatColor(GX_COLOR0A0, gxchandiffuse);
 			GXColor mdc;
-			mdc.r = (gxcurrentmaterialdiffusecolor.r * 0xFF) / 2;
-			mdc.g = (gxcurrentmaterialdiffusecolor.g * 0xFF) / 2;
-			mdc.b = (gxcurrentmaterialdiffusecolor.b * 0xFF) / 2;
-			mdc.a = (gxcurrentmaterialdiffusecolor.a * 0xFF) / 2;
+			mdc.r = (gxcurrentmaterialdiffusecolor.r * 0xFF);// / 2;
+			mdc.g = (gxcurrentmaterialdiffusecolor.g * 0xFF);// / 2;
+			mdc.b = (gxcurrentmaterialdiffusecolor.b * 0xFF);// / 2;
+			mdc.a = (gxcurrentmaterialdiffusecolor.a * 0xFF);// / 2;
 			GX_SetChanMatColor(GX_COLOR0A0, mdc ); 
 
 //			GX_InitLightShininess(&gxlight[lightcounter], 2.0);
@@ -188,6 +188,9 @@ void glEnd(void) {
 			guVecMultiply(view,&lpos,&lpos);	//update light position by current view matrix
 												//light position should be transformed by world-to-view matrix (thanks h0lyRS)
 			GX_InitLightPos(&gxlight[lightcounter], lpos.x, lpos.y, lpos.z); //feed corrected coord to light pos
+//			GX_InitLightPos(&gxlight[lightcounter], 0.0f, 0.0f, 2.0f); //feed corrected coord to light pos
+			
+			
 			
 			//dir attn spot TODO: these should be controleable from opengl
 			
@@ -197,17 +200,18 @@ void glEnd(void) {
             //guMtxTranspose(mvi,mv);
             guVecMultiply(mvi,&ldir,&ldir); //update light position by current view matrix
 	        //dir attn spot TODO: these should be controleable from opengl
-            //GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //shine down from y axis? Is this opengl default also?
+            GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //shine down from y axis? Is this opengl default also?
             //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
 			
-			//GX_InitLightDir(&gxlight[lightcounter], 0, -1, 0);	//shine down from y axis? Is this opengl default also?
+//			GX_InitLightDir(&gxlight[lightcounter], 0, 0, -1);	//shine down from y axis? Is this opengl default also?
 			//													//and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
 
 			//make this line optional? If on it disturbs diffuse light?
 			//GX_InitSpecularDir(&gxlight[lightcounter], 0, -1, 0); //needed to enable specular light
 
-//			GX_InitLightDistAttn(&gxlight[lightcounter], 20.0f, 0.5f, GX_DA_MEDIUM);
-//			GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
+			GX_InitLightDistAttn(&gxlight[lightcounter], 100.0f, 0.5f, GX_DA_GENTLE);
+			//GX_InitLightSpot(&gxlight[lightcounter], 30.0f, GX_SP_COS2); //not this is not a spot light
+			GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
 
 			//Load the light up
 			switch (lightcounter){
@@ -317,10 +321,10 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 			gxlightdiffusecolor[lightNum].a = params[3];
 			//GX_InitLightColor(&gxlight[lightNum], defcolor);
 			GXColor ldc;
-			ldc.r = (gxlightdiffusecolor[lightNum].r * 0xFF) / 2;
-			ldc.g = (gxlightdiffusecolor[lightNum].g * 0xFF) / 2;
-			ldc.b = (gxlightdiffusecolor[lightNum].b * 0xFF) / 2;
-			ldc.a = (gxlightdiffusecolor[lightNum].a * 0xFF) / 2;
+			ldc.r = (gxlightdiffusecolor[lightNum].r * 0xFF);// / 2;
+			ldc.g = (gxlightdiffusecolor[lightNum].g * 0xFF);// / 2;
+			ldc.b = (gxlightdiffusecolor[lightNum].b * 0xFF);// / 2;
+			ldc.a = (gxlightdiffusecolor[lightNum].a * 0xFF);// / 2;
 			GX_InitLightColor(&gxlight[lightNum], ldc ); //move call to glend or init?;
 			
 			break;
@@ -530,7 +534,7 @@ void glEnable(GLenum type){
 				GX_SetNumChans(1); //use/enable one light (the first?)
 
 				//channel 1 (ambient + diffuse)
-				GX_SetChanCtrl(GX_COLOR0A0,GX_TRUE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_NONE); //uses (texture)perpixel colors (light works)
+				GX_SetChanCtrl(GX_COLOR0A0,GX_TRUE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_SPOT); //uses (texture)perpixel colors (light works)
 				
 				//channel 2 (specular)
 				//GXColor white = { 0, 0, 255, 255 };
@@ -575,7 +579,7 @@ void glEnable(GLenum type){
 				//How does this relate to light color? e.g. in opengl both light and material have diffuse and ambient component
 
 				// Set up shader (write out what each step means)
-				GX_SetNumTevStages(4); //each extra color takes another stage?
+				GX_SetNumTevStages(3); //each extra color takes another stage?
 				
 					
 				//GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
