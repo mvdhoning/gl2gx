@@ -226,13 +226,37 @@ void glEnd(void) {
 			if (gxspotcutoff[lightcounter] != 180){
                //Setup specular light (only for spotlight when GL_SPOT_CUTOFF <> 180)
 			   //make this line optional? If on it disturbs diffuse light?
-			   //GX_InitSpecularDir(&gxlight[lightcounter], gxspotdirection[lightcounter].x, gxspotdirection[lightcounter].y, gxspotdirection[lightcounter].z); //needed to enable specular light
+               Vector sdir;
+               sdir.x = gxspotdirection[lightcounter].x;
+               sdir.y = gxspotdirection[lightcounter].y;
+               sdir.z = gxspotdirection[lightcounter].z;
+			   guVecMultiply(mvi,&sdir,&sdir);
+			   //GX_InitSpecularDir(&gxlight[lightcounter], sdir.x, sdir.y, sdir.z); //needed to enable specular light
                //GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
             }
 
             //Setup distance attinuation (opengl vs gx differences?)
-			GX_InitLightDistAttn(&gxlight[lightcounter], 100.0f, gxspotexponent[lightcounter], GX_DA_GENTLE); //gxspotexponent was 0.5f
-                                                     //ref_dist, bright, dist func        
+			//GX_InitLightDistAttn(&gxlight[lightcounter], 100.0f, gxspotexponent[lightcounter], GX_DA_GENTLE); //gxspotexponent was 0.5f
+                                                     //ref_dist, bright, dist func  
+            //k0 = 1.0;                   
+            //k1 = 0.5f*(1.0f-ref_brite)/(ref_brite*ref_dist);
+ 			//k2 = 0.5f*(1.0f-ref_brite)/(ref_brite*ref_dist*ref_dist); or 0.0f;                  
+                    
+                    
+                     
+            //Attenuation factor = 1 / (kc + kl*d + kq*d2) 
+            //kc = constant attenuation factor (default = 1.0) 
+            //kl = linear attenuation factor (default = 0.0) 
+            //kq = quadratic attenuation factor (default = 0.0) 
+         
+            float distance = 100.0f; //either distance of light or falloff factor
+            float factor = 1 / (gxconstantattanuation[lightcounter] + gxlinearattanuation[lightcounter]*distance + gxquadraticattanuation[lightcounter]*distance*distance);                   
+                                                     
+            //GX_InitLightAttnK(&gxlight[lightcounter], 1.0f , factor ,0.0f);
+            GX_InitLightDistAttn(&gxlight[lightcounter], factor, 1.0f, GX_DA_GENTLE); //gxspotexponent[lightcounter]
+
+                                                     
+                                                           
             //Setup light type (normal/spotlight)
             GX_InitLightSpot(&gxlight[lightcounter], gxspotcutoff[lightcounter], GX_SP_COS); //not this is not a spot light
                                                 //cut_off, spot func
@@ -329,7 +353,7 @@ void glLightf( GLenum light, GLenum pname, GLfloat param ){
 		case GL_SPOT_CUTOFF: gxspotcutoff[lightNum] = param; break;
 		case GL_SPOT_EXPONENT: gxspotexponent[lightNum] = param; break;
 		case GL_CONSTANT_ATTENUATION: gxconstantattanuation[lightNum] = param; break;
-		case GL_LINEAR_ATTENUATION: gxlinearattenuation[lightNum] = param; break;
+		case GL_LINEAR_ATTENUATION: gxlinearattanuation[lightNum] = param; break;
 		case GL_QUADRATIC_ATTENUATION: gxquadraticattanuation[lightNum] = param; break;
     };
 };
