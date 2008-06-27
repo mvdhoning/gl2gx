@@ -232,8 +232,10 @@ void glEnd(void) {
                sdir.z = gxspotdirection[lightcounter].z;
 			   guVecMultiply(mvi,&sdir,&sdir);
 			   //GX_InitSpecularDir(&gxlight[lightcounter], sdir.x, sdir.y, sdir.z); //needed to enable specular light
-               //GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
+               
             }
+            
+            GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
 
             //Setup distance attinuation (opengl vs gx differences?)
 			//GX_InitLightDistAttn(&gxlight[lightcounter], 100.0f, gxspotexponent[lightcounter], GX_DA_GENTLE); //gxspotexponent was 0.5f
