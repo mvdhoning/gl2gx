@@ -10,6 +10,7 @@ typedef struct
 	float x;
 	float y;
 	float z;
+	float w;
 } VertexElement;
 
 typedef struct 
@@ -59,12 +60,20 @@ VertexElement gxlightpos[8]; //light position for each light
 VertexElement gxlightdir[8]; //light direction for each light
 bool gxlightenabled[8]; //is specific light enabled
 int gxcurlight; //test for light position
-//GXColor AmbientColor; //? is actually material?
 
 //light specs
 GXColorf gxlightambientcolor[8];
 GXColorf gxlightdiffusecolor[8];
 GXColorf gxlightspecularcolor[8];
+
+//spot light specs
+VertexElement gxspotdirection[8];
+float gxspotexponent[8];
+float gxspotcutoff[8];
+
+float gxconstantattanuation[8];
+float gxlinearattanuation[8];
+float gxquadraticattanuation[8];
 
 //lightmodel specs
 GXColorf gxglobalambientlightcolor;
