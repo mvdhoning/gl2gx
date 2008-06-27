@@ -44,6 +44,13 @@ void glutInit(int *argcp, char **argv) {
         gxlightspecularcolor[i].g=0;
         gxlightspecularcolor[i].b=0;
         gxlightspecularcolor[i].a=0;
+        
+        gxspotcutoff[0] = 180;
+        gxspotexponent[0] = 0;
+        gxspotdirection[0].x = 0;
+        gxspotdirection[0].y = 0;
+        gxspotdirection[0].z = -1;
+        gxspotdirection[0].w = 1;       
     }
     
     gxlightdiffusecolor[0].r=1;
@@ -55,6 +62,8 @@ void glutInit(int *argcp, char **argv) {
     gxlightspecularcolor[0].g=1;
     gxlightspecularcolor[0].b=1;
     gxlightspecularcolor[0].a=1;
+    
+
     
     tex2denabled = false;
 
