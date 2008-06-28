@@ -45,12 +45,12 @@ void glutInit(int *argcp, char **argv) {
         gxlightspecularcolor[i].b=0;
         gxlightspecularcolor[i].a=0;
         
-        gxspotcutoff[0] = 180;
-        gxspotexponent[0] = 0;
-        gxspotdirection[0].x = 0;
-        gxspotdirection[0].y = 0;
-        gxspotdirection[0].z = -1;
-        gxspotdirection[0].w = 1;       
+        gxspotcutoff[i] = 180;
+        gxspotexponent[i] = 0;
+        gxspotdirection[i].x = 0;
+        gxspotdirection[i].y = 0;
+        gxspotdirection[i].z = -1;
+        gxspotdirection[i].w = 1;       
     }
     
     gxlightdiffusecolor[0].r=1;
@@ -106,7 +106,7 @@ void glutInitDisplayMode(unsigned int mode) {
 	GX_SetCopyFilter(rmode->aa,rmode->sample_pattern,GX_TRUE,rmode->vfilter);
 	GX_SetFieldMode(rmode->field_rendering,((rmode->viHeight==2*rmode->xfbHeight)?GX_ENABLE:GX_DISABLE));
  
-	GX_SetCullMode(GX_CULL_NONE);
+	GX_SetCullMode(GX_CULL_ALL);
 	GX_CopyDisp(frameBuffer[fb],GX_TRUE);
 	GX_SetDispCopyGamma(GX_GM_1_0);
  
