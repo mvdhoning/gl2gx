@@ -108,6 +108,7 @@ void glBegin(GLenum type) {
 	//store the type
 	switch(type)
 	{
+        case GL_TRIANGLE_STRIP: _type = GX_TRIANGLESTRIP; break;        
 		case GL_TRIANGLES: _type = GX_TRIANGLES; break;
 		case GL_QUADS: _type = GX_QUADS; break;
 		case GL_LINES: _type = GL_LINES; break;
@@ -163,10 +164,10 @@ void glEnd(void) {
 		if(gxlightenabled[lightcounter]){ //when light is enabled
 
             //Setup mat/light ambient color 
-			gxchanambient.r = ((gxcurrentmaterialambientcolor.r * gxlightambientcolor[lightcounter].r) * 0xFF);
-			gxchanambient.g = ((gxcurrentmaterialambientcolor.g * gxlightambientcolor[lightcounter].g) * 0xFF);
-			gxchanambient.b = ((gxcurrentmaterialambientcolor.b * gxlightambientcolor[lightcounter].b) * 0xFF);
-			gxchanambient.a = ((gxcurrentmaterialambientcolor.a * gxlightambientcolor[lightcounter].a) * 0xFF);
+			gxchanambient.r = ((gxchanambient.r * gxlightambientcolor[lightcounter].r) * 0xFF);
+			gxchanambient.g = ((gxchanambient.g * gxlightambientcolor[lightcounter].g) * 0xFF);
+			gxchanambient.b = ((gxchanambient.b * gxlightambientcolor[lightcounter].b) * 0xFF);
+			gxchanambient.a = ((gxchanambient.a * gxlightambientcolor[lightcounter].a) * 0xFF);
 			GX_SetChanAmbColor(GX_COLOR0A0, gxchanambient ); 
 			
 			//Setup diffuse material color
@@ -282,13 +283,18 @@ void glEnd(void) {
 	GX_LoadTexObj(&gxtextures[curtexture], GX_TEXMAP0); //TODO: make GX_TEXMAP0 dynamic for multitexturing
 	};
 
-	//now we can draw the gx way
+	//now we can draw the gx way (experiment try render in reverse ivm normals pointing the wrong way)
 	GX_Begin(_type, GX_VTXFMT0, _numelements);
 	int i =0;
-	for( i=0; i<_numelements; i++)
+                                //default
+//order dependend on glFrontFace(GL_CCW); 
+//or GL_CW //	for( i=0; i<_numelements; i++)
+
+for( i=_numelements-1; i>=0; i--)
 	{
 		GX_Position3f32( _vertexelements[i].x, _vertexelements[i].y, _vertexelements[i].z);	
-		GX_Normal3f32(_normalelements[i].x, _normalelements[i].y, _normalelements[i].z);
+		
+        GX_Normal3f32(_normalelements[i].x, _normalelements[i].y, _normalelements[i].z);
 
 		//when using GL_FLAT only one color is allowed!!! //GL_SMOOTH allows for an color to be specified at each vertex
 		GX_Color3f32( _colorelements[i].r, _colorelements[i].g, _colorelements[i].b); //glmaterialfv call instead when glcolormaterial call is used
