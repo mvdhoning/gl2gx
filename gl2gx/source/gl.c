@@ -290,16 +290,59 @@ void glEnd(void) {
 //order dependend on glFrontFace(GL_CCW); 
 //or GL_CW //	for( i=0; i<_numelements; i++)
 
-for( i=_numelements-1; i>=0; i--)
+//GX_TRIANGLESTRIP   GL_TRIANGLE_STRIP
+//0 1 2			     0 1 2
+//1 3 2			     2 1 3
+//2 3 4			     2 3 4
+//better think of a clever swapping routine
+//maybe then no need to invert normal for trianglestrip anymore
+
+//also GX_TRIANLES need to be drawn in reverse?
+//but GX_QUAD does not
+
+//so GX = CW by default while opengl is CCW by default?
+
+u32 reverse = 0;
+int pos = 0;
+int temp = 0;
+//for( i=_numelements-1; i>=0; i--)
+for( i=0; i<_numelements; i++)
 	{
-		GX_Position3f32( _vertexelements[i].x, _vertexelements[i].y, _vertexelements[i].z);	
+            
+        pos = i; 
+            
+        if (_type == GX_TRIANGLESTRIP) 
+        {              
+        if ( temp == 3)
+        {
+             reverse = 1;
+        }; 
+        
+        
+        
+        if (reverse==1)
+        {
+           switch(temp)
+           {
+              case 3: pos = i + 1; break;
+              case 4: pos = i + 1; break;
+              case 5: pos = i - 2; break;
+           }
+        }
+        }
+          
+                       
+		GX_Position3f32( _vertexelements[pos].x, _vertexelements[pos].y, _vertexelements[pos].z);	
 		
-        GX_Normal3f32(_normalelements[i].x, _normalelements[i].y, _normalelements[i].z);
+        GX_Normal3f32(_normalelements[pos].x, _normalelements[pos].y, _normalelements[pos].z);
 
 		//when using GL_FLAT only one color is allowed!!! //GL_SMOOTH allows for an color to be specified at each vertex
-		GX_Color3f32( _colorelements[i].r, _colorelements[i].g, _colorelements[i].b); //glmaterialfv call instead when glcolormaterial call is used
+		GX_Color3f32( _colorelements[pos].r, _colorelements[pos].g, _colorelements[pos].b); //glmaterialfv call instead when glcolormaterial call is used
 
-		GX_TexCoord2f32(_texcoordelements[i].s,_texcoordelements[i].t);
+		GX_TexCoord2f32(_texcoordelements[pos].s,_texcoordelements[pos].t);
+		
+		temp += 1;
+		if (temp >= 6) {temp = 0; reverse = 0; };
 		
 	}	
 	GX_End();
