@@ -161,6 +161,7 @@ void glEnd(void) {
 
 	Mtx mvi;
 	Mtx mv;
+	
 //	Mtx inversemodelview;
 
 	// load the modelview matrix into matrix memory
@@ -217,6 +218,14 @@ void glEnd(void) {
 			mdc.b = (gxcurrentmaterialdiffusecolor.b * 0xFF);
 			mdc.a = (gxcurrentmaterialdiffusecolor.a * 0xFF);
 			GX_SetChanMatColor(GX_COLOR0A0, mdc ); 
+			
+			//Setup specular material color
+			GXColor spec;
+			spec.r = (gxcurrentmaterialspecularcolor.r * 0xFF);
+			spec.g = (gxcurrentmaterialspecularcolor.g * 0xFF);
+			spec.b = (gxcurrentmaterialspecularcolor.b * 0xFF);
+			spec.a = (gxcurrentmaterialspecularcolor.a * 0xFF);
+			GX_SetChanMatColor(GX_COLOR1A1, spec); // use red as test color
 
 			//Setup light postion
 			
@@ -259,8 +268,10 @@ void glEnd(void) {
                      ldir.z = 0;
                }
             }
+            guVecNormalize(&ldir);
             guMtxInverse(view,mvi);
-            guVecMultiply(mvi,&ldir,&ldir); //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
+            guMtxTranspose(mvi,view);
+            guVecMultiply(view,&ldir,&ldir); //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
             GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //feed corrected coord to light dir
             
             
@@ -271,8 +282,8 @@ void glEnd(void) {
                sdir.x = gxspotdirection[lightcounter].x;
                sdir.y = gxspotdirection[lightcounter].y;
                sdir.z = gxspotdirection[lightcounter].z;
-			   guVecMultiply(mvi,&sdir,&sdir);
-			   //GX_InitSpecularDir(&gxlight[lightcounter], sdir.x, sdir.y, sdir.z); //needed to enable specular light
+			   guVecMultiply(view,&sdir,&sdir);
+			   GX_InitSpecularDir(&gxlight[lightcounter], sdir.x, sdir.y, sdir.z); //needed to enable specular light
                
             }
             
@@ -681,8 +692,6 @@ void glEnable(GLenum type){
 				GX_SetChanCtrl(GX_COLOR0A0,GX_TRUE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_SPOT);
 				
 				//channel 2 (specular)
-				GXColor twhite = { 0, 0, 255, 255 };
-				GX_SetChanMatColor(GX_COLOR1A1, twhite); // use white as test color
 				GX_SetChanCtrl(GX_COLOR1A1,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_SPEC);
 				
 				
@@ -691,9 +700,9 @@ void glEnable(GLenum type){
 				//Setup the number of tev stages needed
 				int numtevstages = 0;
 				if (tex2denabled){ 
-                  numtevstages = 4;
+                  numtevstages = 5;
                 } else {
-                  numtevstages = 3;
+                  numtevstages = 4;
                 }
 				GX_SetNumTevStages(numtevstages); //each extra color takes another stage?
 				
@@ -745,15 +754,29 @@ void glEnable(GLenum type){
 				
 				// end stage 3
 				
+				//stage 4 (specular light)
+				
+
+		// color - blend
+		GX_SetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ONE, GX_CC_RASC, GX_CC_ZERO); //shagkur method
+		
+		// alpha - nop
+		GX_SetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO); //shagkur method
+
+		GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR1A1);
+				
+				// end stage 4
 				
 				if (tex2denabled){ 
                                    
-                    // stage 4 (textures)
+                    // stage 5 (textures)
 				
-				    GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //use texture
-				    GX_SetTevOp(GX_TEVSTAGE3, GX_MODULATE); //blend with previous stage
+				    GX_SetTevOrder(GX_TEVSTAGE4, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //use texture
+				    GX_SetTevOp(GX_TEVSTAGE4, GX_MODULATE); //blend with previous stage
 
-                    // end stage 4
+                    // end stage 5
 
                 }   
 
