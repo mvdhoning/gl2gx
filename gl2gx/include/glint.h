@@ -3,7 +3,8 @@
 //TODO: rewrite to support dynamic arrays
 #define MAX_ARRAY 1000
 
-#define LARGE_NUMBER 9.9999998e+017
+#define LARGE_NUMBER 1048576
+#define BIG_NUMBER		(1024*1024)
 //1048576
 //1.0e-18F
 //9.9999998e+017
