@@ -115,6 +115,46 @@ void glBegin(GLenum type) {
 	};
 }
 
+
+void UploadVertex(int index){
+        int pos = index; 
+/*            
+        if (_type == GX_TRIANGLESTRIP) 
+        {              
+        if ( temp == 3)
+        {
+             reverse = 1;
+        }; 
+        
+        
+        
+        if (reverse==1)
+        {
+           switch(temp)
+           {
+              case 3: pos = index + 1; break;
+              case 4: pos = index + 1; break;
+              case 5: pos = index - 2; break;
+           }
+        }
+        }
+*/          
+                       
+		GX_Position3f32( _vertexelements[pos].x, _vertexelements[pos].y, _vertexelements[pos].z);	
+		
+        GX_Normal3f32(_normalelements[pos].x, _normalelements[pos].y, _normalelements[pos].z);
+
+		//when using GL_FLAT only one color is allowed!!! //GL_SMOOTH allows for an color to be specified at each vertex
+		GX_Color3f32( _colorelements[pos].r, _colorelements[pos].g, _colorelements[pos].b); //glmaterialfv call instead when glcolormaterial call is used
+
+		GX_TexCoord2f32(_texcoordelements[pos].s,_texcoordelements[pos].t);
+/*		
+		temp += 1;
+		if (temp >= 6) {temp = 0; reverse = 0; };
+*/
+		
+};
+
 void glEnd(void) {
      
      GX_SetCullMode(GX_CULL_FRONT);
@@ -284,7 +324,13 @@ void glEnd(void) {
 	};
 
 	//now we can draw the gx way (experiment try render in reverse ivm normals pointing the wrong way)
-	GX_Begin(_type, GX_VTXFMT0, _numelements);
+	
+	int countelements = _numelements*2;
+	if (gxcullfaceanabled==true){
+       countelements = _numelements;
+    }
+	
+	GX_Begin(_type, GX_VTXFMT0, countelements); //dependend on culling setting
 	int i =0;
                                 //default
 //order dependend on glFrontFace(GL_CCW); 
@@ -302,49 +348,42 @@ void glEnd(void) {
 
 //so GX = CW by default while opengl is CCW by default?
 
-u32 reverse = 0;
-int pos = 0;
-int temp = 0;
-//for( i=_numelements-1; i>=0; i--)
-for( i=0; i<_numelements; i++)
-	{
-            
-        pos = i; 
-            
-        if (_type == GX_TRIANGLESTRIP) 
-        {              
-        if ( temp == 3)
-        {
-             reverse = 1;
-        }; 
-        
-        
-        
-        if (reverse==1)
-        {
-           switch(temp)
-           {
-              case 3: pos = i + 1; break;
-              case 4: pos = i + 1; break;
-              case 5: pos = i - 2; break;
-           }
-        }
-        }
-          
-                       
-		GX_Position3f32( _vertexelements[pos].x, _vertexelements[pos].y, _vertexelements[pos].z);	
-		
-        GX_Normal3f32(_normalelements[pos].x, _normalelements[pos].y, _normalelements[pos].z);
+//bushing say cannot i be possibel that opengl reorders vertexes
 
-		//when using GL_FLAT only one color is allowed!!! //GL_SMOOTH allows for an color to be specified at each vertex
-		GX_Color3f32( _colorelements[pos].r, _colorelements[pos].g, _colorelements[pos].b); //glmaterialfv call instead when glcolormaterial call is used
+//u32 reverse = 0;
+//int pos = 0;
+//int temp = 0;
 
-		GX_TexCoord2f32(_texcoordelements[pos].s,_texcoordelements[pos].t);
-		
-		temp += 1;
-		if (temp >= 6) {temp = 0; reverse = 0; };
-		
-	}	
+
+bool cw = true;
+bool ccw = true;
+
+if(gxcullfaceanabled==true){
+   cw = false;
+   ccw = false;                            
+   switch(gxwinding){
+      case GL_CW: cw = true; break;
+      case GL_CCW: ccw = true; break;
+   }                         
+}
+
+    if (cw==true){ 
+       //CW     
+       for( i=_numelements-1; i>=0; i--)
+       {
+            UploadVertex(i);    	
+       }
+    }
+    
+    if (ccw==true){
+       //CCW
+       for( i=0; i<_numelements; i++)
+       {
+            UploadVertex(i);    	
+       }
+    }
+
+
 	GX_End();
 
 	//clean up just to be sure
@@ -733,6 +772,7 @@ void glEnable(GLenum type){
 			case GL_LIGHT5: gxlightenabled[5]=true; break;
 			case GL_LIGHT6: gxlightenabled[6]=true; break;
 			case GL_LIGHT7: gxlightenabled[7]=true; break;
+			case GL_CULL_FACE: gxcullfaceanabled=true; break;
 		};
 }
 
@@ -768,6 +808,7 @@ void glDisable(GLenum type){
 			case GL_LIGHT5: gxlightenabled[5]=false; break;
 			case GL_LIGHT6: gxlightenabled[6]=false; break;
 			case GL_LIGHT7: gxlightenabled[7]=false; break;
+			case GL_CULL_FACE: gxcullfaceanabled=false; break;
 		};
 }
 
@@ -787,5 +828,11 @@ void glDepthFunc(GLenum type){
 
 		};
 }
+
+/* Culling / Winding */
+
+void glFrontFace( GLenum mode ){
+		gxwinding = mode;
+};
 
 /* end */
