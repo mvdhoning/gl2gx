@@ -85,6 +85,10 @@ GXColorf gxcurrentmaterialdiffusecolor;
 GXColorf gxcurrentmaterialspecularcolor;
 float gxcurrentmaterialshininess;
 
+/* culling */
+bool gxcullfaceanabled;
+GLenum gxwinding;
+
 /* textures */
 bool tex2denabled;
 GLint curtexture;
