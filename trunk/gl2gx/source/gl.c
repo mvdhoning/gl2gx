@@ -155,6 +155,34 @@ void UploadVertex(int index){
 		
 };
 
+ void GX_TestInitSpecularDir(GXLightObj *lit_obj,f32 nx,f32 ny,f32 nz)
+ {
+     //f32 px, py, pz;
+     f32 hx, hy, hz, mag;
+ 
+     // Compute half-angle vector
+     hx  = -nx;
+     hy  = -ny;
+     hz  = (-nz + 1.0f);
+     mag = 1.0f / sqrtf((hx * hx) + (hy * hy) + (hz * hz));
+     hx *= mag;
+     hy *= mag;
+     hz *= mag;
+ 
+     //px  = -nx * BIG_NUMBER;
+     //py  = -ny * BIG_NUMBER;
+     //pz  = -nz * BIG_NUMBER;
+ 
+ 	//((f32*)lit_obj)[10] = px;
+ 	//((f32*)lit_obj)[11] = py;
+ 	//((f32*)lit_obj)[12] = pz;
+ 	((f32*)lit_obj)[13] = hx;
+ 	((f32*)lit_obj)[14] = hy;
+ 	((f32*)lit_obj)[15] = hz;
+}
+
+
+
 void glEnd(void) {
      
      GX_SetCullMode(GX_CULL_FRONT);
@@ -241,9 +269,9 @@ void glEnd(void) {
             }
             else
             {
-                lpos.x = LARGE_NUMBER;
-                lpos.y = LARGE_NUMBER;
-                lpos.z = LARGE_NUMBER;
+                lpos.x = gxlightpos[lightcounter].x * BIG_NUMBER;
+                lpos.y = gxlightpos[lightcounter].y * BIG_NUMBER;
+                lpos.z = gxlightpos[lightcounter].z * BIG_NUMBER;
             }
 			guVecMultiply(view,&lpos,&lpos);	   //light position should be transformed by world-to-view matrix (thanks h0lyRS)
 			GX_InitLightPos(&gxlight[lightcounter], lpos.x, lpos.y, lpos.z); //feed corrected coord to light pos
@@ -251,6 +279,10 @@ void glEnd(void) {
             //Setup light direction (when w is 1 dan dir = 0,0,0
             Vector ldir;
             if (gxlightpos[lightcounter].w==0){ 
+               //lpos.x = gxlightpos[lightcounter].x;
+			   //lpos.y = gxlightpos[lightcounter].y;
+               //lpos.z = gxlightpos[lightcounter].z;
+                                                
                ldir.x = gxlightpos[lightcounter].x;
                ldir.y = gxlightpos[lightcounter].y;
                ldir.z = gxlightpos[lightcounter].z;
@@ -282,8 +314,8 @@ void glEnd(void) {
                sdir.x = gxspotdirection[lightcounter].x;
                sdir.y = gxspotdirection[lightcounter].y;
                sdir.z = gxspotdirection[lightcounter].z;
-			   guVecMultiply(view,&sdir,&sdir);
-			   GX_InitSpecularDir(&gxlight[lightcounter], sdir.x, sdir.y, sdir.z); //needed to enable specular light
+			   guVecMultiply(mvi,&sdir,&sdir);
+			   GX_TestInitSpecularDir(&gxlight[lightcounter], sdir.x, sdir.y, sdir.z); //needed to enable specular light
                
             }
             
@@ -314,6 +346,8 @@ void glEnd(void) {
             //Setup light type (normal/spotlight)
             GX_InitLightSpot(&gxlight[lightcounter], gxspotcutoff[lightcounter], GX_SP_COS); //not this is not a spot light
                                                 //cut_off, spot func
+            //GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
+
 
 			//Load the light up
 			switch (lightcounter){
@@ -759,11 +793,11 @@ void glEnable(GLenum type){
 
 		// color - blend
 		GX_SetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ONE, GX_CC_RASC, GX_CC_ZERO); //shagkur method
+		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
 		
 		// alpha - nop
 		GX_SetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO); //shagkur method
+		GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA); //shagkur method
 
 		GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR1A1);
 				
@@ -773,8 +807,8 @@ void glEnable(GLenum type){
                                    
                     // stage 5 (textures)
 				
-				    GX_SetTevOrder(GX_TEVSTAGE4, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //use texture
-				    GX_SetTevOp(GX_TEVSTAGE4, GX_MODULATE); //blend with previous stage
+				    GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //use texture
+				    GX_SetTevOp(GX_TEVSTAGE3, GX_MODULATE); //blend with previous stage
 
                     // end stage 5
 
