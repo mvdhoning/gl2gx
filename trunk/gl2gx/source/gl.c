@@ -227,7 +227,11 @@ void glEnd(void) {
 	gxchanambient.b = gxcurrentmaterialambientcolor.b;
 	gxchanambient.a = gxcurrentmaterialambientcolor.a;
 	
-	
+	GXColor gxchanspecular;
+	gxchanspecular.r = gxcurrentmaterialspecularcolor.r;
+	gxchanspecular.g = gxcurrentmaterialspecularcolor.g;
+	gxchanspecular.b = gxcurrentmaterialspecularcolor.b;
+	gxchanspecular.a = gxcurrentmaterialspecularcolor.a;	
 	
 	int lightcounter = 0;
 	for (lightcounter =0; lightcounter < 8; lightcounter++){
@@ -252,12 +256,11 @@ void glEnd(void) {
 			GX_SetChanMatColor(GX_COLOR0A0, mdc ); 
 			
 			//Setup specular material color
-			GXColor spec;
-			spec.r = (gxcurrentmaterialspecularcolor.r * 0xFF);
-			spec.g = (gxcurrentmaterialspecularcolor.g * 0xFF);
-			spec.b = (gxcurrentmaterialspecularcolor.b * 0xFF);
-			spec.a = (gxcurrentmaterialspecularcolor.a * 0xFF);
-			GX_SetChanMatColor(GX_COLOR1A1, spec); // use red as test color
+			gxchanspecular.r = (gxchanspecular.r * gxlightspecularcolor[lightcounter].r)* 0xFF;
+			gxchanspecular.g = (gxchanspecular.g * gxlightspecularcolor[lightcounter].g)* 0xFF;
+			gxchanspecular.b = (gxchanspecular.b * gxlightspecularcolor[lightcounter].b)* 0xFF;
+			gxchanspecular.a = (gxchanspecular.a * gxlightspecularcolor[lightcounter].a)* 0xFF;
+			GX_SetChanMatColor(GX_COLOR1A1, gxchanspecular); // use red as test color
 
             //Setup light diffuse color
             GXColor ldc;
@@ -313,13 +316,20 @@ void glEnd(void) {
                 else { 
                      ldir.x = 0;
                      ldir.y = 0;
-                     ldir.z = 0;
+                     ldir.z = -1;
                }
             }
+            
             guVecNormalize(&ldir);
+            ldir.x *= BIG_NUMBER;
+            ldir.y *= BIG_NUMBER;
+            ldir.z *= BIG_NUMBER;
+            
             guMtxInverse(view,mvi);
             guMtxTranspose(mvi,view);
+            
             guVecMultiply(view,&ldir,&ldir); //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
+            
             GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //feed corrected coord to light dir
            
             
@@ -330,12 +340,19 @@ void glEnd(void) {
                sdir.x = gxspotdirection[lightcounter].x;
                sdir.y = gxspotdirection[lightcounter].y;
                sdir.z = gxspotdirection[lightcounter].z;
-			   guVecMultiply(mvi,&sdir,&sdir);
-			   GX_TestInitSpecularDir(&gxlight[lightcounter], sdir.x, sdir.y, sdir.z); //needed to enable specular light
+               guVecNormalize(&sdir);
+                     
+               sdir.x *= BIG_NUMBER;
+               sdir.y *= BIG_NUMBER;
+               sdir.z *= BIG_NUMBER;       
+                              
+			   guVecMultiply(view,&sdir,&sdir);
+			   
+               GX_TestInitSpecularDir(&gxlight[lightcounter], sdir.x, sdir.y, sdir.z); //needed to enable specular light
                
-            }
+            };
             
-            GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
+            GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess ); // /180?
 
             //Setup distance attinuation (opengl vs gx differences?)
 			//GX_InitLightDistAttn(&gxlight[lightcounter], 100.0f, gxspotexponent[lightcounter], GX_DA_GENTLE); //gxspotexponent was 0.5f
@@ -351,16 +368,17 @@ void glEnd(void) {
             //kl = linear attenuation factor (default = 0.0) 
             //kq = quadratic attenuation factor (default = 0.0) 
          
-            float distance = 100.0f; //either distance of light or falloff factor
+            float distance = BIG_NUMBER; //either distance of light or falloff factor
             float factor = 1 / (gxconstantattanuation[lightcounter] + gxlinearattanuation[lightcounter]*distance + gxquadraticattanuation[lightcounter]*distance*distance);                   
                                                      
             //GX_InitLightAttnK(&gxlight[lightcounter], 1.0f , factor ,0.0f);
-            GX_InitLightDistAttn(&gxlight[lightcounter], factor, 1.0f, GX_DA_GENTLE); //gxspotexponent[lightcounter]
-
+            GX_InitLightDistAttn(&gxlight[lightcounter], -39.0F,40.0F, GX_DA_GENTLE); //gxspotexponent[lightcounter]
+            //                                           factor / strenght
+//1.0 is //    glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 10.0f); ??
                                                      
                                                            
             //Setup light type (normal/spotlight)
-            GX_InitLightSpot(&gxlight[lightcounter], gxspotcutoff[lightcounter], GX_SP_COS); //not this is not a spot light
+            GX_InitLightSpot(&gxlight[lightcounter], gxspotcutoff[lightcounter], GX_SP_COS2); //not this is not a spot light
                                                 //cut_off, spot func
             //GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
 
@@ -806,13 +824,13 @@ void glEnable(GLenum type){
 
 		// color - blend
 		GX_SetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
-		//GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ONE, GX_CC_RASC, GX_CC_ZERO); //shagkur method
+		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+//		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ONE, GX_CC_RASC, GX_CC_ZERO); //shagkur method
 		
 		// alpha - nop
 		GX_SetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
-//		GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA); //shagkur method
-        GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO); //shagkur method
+		GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA); //shagkur method
+//        GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO); //shagkur method
 
 		GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR1A1);
 			
