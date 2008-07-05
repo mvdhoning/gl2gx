@@ -28,10 +28,13 @@ void glutInit(int *argcp, char **argv) {
 	rmode = VIDEO_GetPreferredMode(NULL);
 	
 	//initialize gl default values
-	glColor3f(1.0F,1.0F,1.0F);
+	glColor3f(1.0,1.0,1.0);
+	glTexCoord2f(0.0f, 0.0f);
+	glNormal3f(0.0f,0.0f,0.0f);
 	
 	int i = 0;
 	for (i=0;i<8;i++){
+        gxlightenabled[i] = false;
         gxlightambientcolor[i].r=0;
         gxlightambientcolor[i].g=0;
         gxlightambientcolor[i].b=0;
@@ -47,10 +50,10 @@ void glutInit(int *argcp, char **argv) {
         
         gxspotcutoff[i] = 180;
         gxspotexponent[i] = 0;
-        gxspotdirection[i].x = 0;
-        gxspotdirection[i].y = 0;
-        gxspotdirection[i].z = -1;
-        gxspotdirection[i].w = 1;       
+        gxspotdirection[i].x = 0.0;
+        gxspotdirection[i].y = 0.0;
+        gxspotdirection[i].z = -1.0;
+        gxspotdirection[i].w = 1.0;       
     }
     
     gxlightdiffusecolor[0].r=1;
@@ -63,9 +66,41 @@ void glutInit(int *argcp, char **argv) {
     gxlightspecularcolor[0].b=1;
     gxlightspecularcolor[0].a=1;
     
+gxglobalambientlightcolor.r = 0.2;
+gxglobalambientlightcolor.g = 0.2;
+gxglobalambientlightcolor.b = 0.2;
+gxglobalambientlightcolor.a = 1.0;
 
-    
+//material specs
+gxcurrentmaterialemissivecolor.r = 0.0;
+gxcurrentmaterialemissivecolor.g = 0.0;
+gxcurrentmaterialemissivecolor.b = 0.0;
+gxcurrentmaterialemissivecolor.a = 1.0;
+
+gxcurrentmaterialambientcolor.r = 0.2;
+gxcurrentmaterialambientcolor.g = 0.2;
+gxcurrentmaterialambientcolor.b = 0.2;
+gxcurrentmaterialambientcolor.a = 1.0;
+
+gxcurrentmaterialdiffusecolor.r = 0.8;
+gxcurrentmaterialdiffusecolor.g = 0.8;
+gxcurrentmaterialdiffusecolor.b = 0.8;
+gxcurrentmaterialdiffusecolor.a = 1.0;
+
+gxcurrentmaterialspecularcolor.r = 0.0;
+gxcurrentmaterialspecularcolor.g = 0.0;
+gxcurrentmaterialspecularcolor.b = 0.0;
+gxcurrentmaterialspecularcolor.a = 1.0;
+
+gxcurrentmaterialshininess = 0.0;
+
+
+    //texture is disabled by default
     tex2denabled = false;
+    
+    //setup culling
+    gxcullfaceanabled=false; //disable
+    gxwinding = GL_CCW;       //counterclockwise
 
 	//VIDEO_ClearFrameBuffer(GXRModeObj *rmode,void *fb,u32 color);?
 

@@ -21,7 +21,7 @@ void glLoadIdentity(void) {
 	guMtxIdentity(model);
 }
 
-void glTranslatef(float x,float y,float z) {
+void glTranslatef( GLfloat x, GLfloat y, GLfloat z ) {
 	Mtx temp;
 
 	guMtxIdentity(temp);
@@ -62,7 +62,7 @@ void  glPushMatrix (void){
 
 /* glVertex */
 
-void glVertex3f(float x,float y,float z) {
+void glVertex3f( GLfloat x, GLfloat y, GLfloat z ) {
 	//store the vertex and keep index
 	_vertexelements[_numelements].x = x;
 	_vertexelements[_numelements].y = y;
@@ -83,13 +83,13 @@ void glVertex3f(float x,float y,float z) {
 	_numelements +=  1;	
 }
 
-void glNormal3f(float x, float y, float z){
+void glNormal3f( GLfloat x, GLfloat y, GLfloat z ){
 	_tempnormalelement.x = x;
 	_tempnormalelement.y = y;
 	_tempnormalelement.z = z;
 }
 
-void glColor3f(float r,float g,float b) {
+void glColor3f( GLfloat r, GLfloat g, GLfloat b ) {
 	//store the vertex and keep index
 	_tempcolorelement.r = r;
 	_tempcolorelement.g = g;
@@ -227,10 +227,14 @@ void glEnd(void) {
 	gxchanambient.b = gxcurrentmaterialambientcolor.b;
 	gxchanambient.a = gxcurrentmaterialambientcolor.a;
 	
+	
+	
 	int lightcounter = 0;
 	for (lightcounter =0; lightcounter < 8; lightcounter++){
 
 		if(gxlightenabled[lightcounter]){ //when light is enabled
+
+            //somewhere here an error happens?
 
             //Setup mat/light ambient color 
 			gxchanambient.r = ((gxchanambient.r * gxlightambientcolor[lightcounter].r) * 0xFF);
@@ -255,26 +259,38 @@ void glEnd(void) {
 			spec.a = (gxcurrentmaterialspecularcolor.a * 0xFF);
 			GX_SetChanMatColor(GX_COLOR1A1, spec); // use red as test color
 
+            //Setup light diffuse color
+            GXColor ldc;
+			ldc.r = gxlightdiffusecolor[lightcounter].r * 0xFF;
+			ldc.g = gxlightdiffusecolor[lightcounter].g * 0xFF;
+			ldc.b = gxlightdiffusecolor[lightcounter].b * 0xFF;
+			ldc.a = gxlightdiffusecolor[lightcounter].a * 0xFF;
+			GX_InitLightColor(&gxlight[lightcounter], ldc ); //move call to glend or init?;
+
 			//Setup light postion
 			
 			//check on w component when 1. light is positional
 			//                     when 0. light is directional at infinite pos
 			
-	        guMtxConcat(view,model,mv);            //update light position by current view matrix
 			Vector lpos;
-			if (gxlightpos[lightcounter].w == 1){
-			   lpos.x = gxlightpos[lightcounter].x;
-			   lpos.y = gxlightpos[lightcounter].y;
-               lpos.z = gxlightpos[lightcounter].z;
+			Vector wpos;
+            lpos.x = gxlightpos[lightcounter].x;
+            lpos.y = gxlightpos[lightcounter].y;
+            lpos.z = gxlightpos[lightcounter].z;
+               
+               
+            if (gxlightpos[lightcounter].w == 0){
+                guVecNormalize(&lpos);
+                lpos.x *= BIG_NUMBER;
+                lpos.y *= BIG_NUMBER;
+                lpos.z *= BIG_NUMBER;
             }
-            else
-            {
-                lpos.x = gxlightpos[lightcounter].x * BIG_NUMBER;
-                lpos.y = gxlightpos[lightcounter].y * BIG_NUMBER;
-                lpos.z = gxlightpos[lightcounter].z * BIG_NUMBER;
-            }
-			guVecMultiply(view,&lpos,&lpos);	   //light position should be transformed by world-to-view matrix (thanks h0lyRS)
-			GX_InitLightPos(&gxlight[lightcounter], lpos.x, lpos.y, lpos.z); //feed corrected coord to light pos
+            
+			guVecMultiply(view,&lpos,&wpos);	   //light position should be transformed by world-to-view matrix (thanks h0lyRS)
+			GX_InitLightPosv(&gxlight[lightcounter], &wpos); //feed corrected coord to light pos
+			
+		
+
 
             //Setup light direction (when w is 1 dan dir = 0,0,0
             Vector ldir;
@@ -305,7 +321,7 @@ void glEnd(void) {
             guMtxTranspose(mvi,view);
             guVecMultiply(view,&ldir,&ldir); //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
             GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //feed corrected coord to light dir
-            
+           
             
 			if (gxspotcutoff[lightcounter] != 180){
                //Setup specular light (only for spotlight when GL_SPOT_CUTOFF <> 180)
@@ -360,8 +376,11 @@ void glEnd(void) {
 				case 6: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT6); break;
 				case 7: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT7); break;
 			}
+
+
 		}
 	}
+
 
 	//set the curtexture if tex2denabled
 	if (tex2denabled){
@@ -399,6 +418,7 @@ void glEnd(void) {
 //int pos = 0;
 //int temp = 0;
 
+//GL_POLYGON: http://www.gamedev.net/reference/articles/article425.asp
 
 bool cw = true;
 bool ccw = true;
@@ -527,13 +547,6 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 			gxlightdiffusecolor[lightNum].g = params[1];
 			gxlightdiffusecolor[lightNum].b = params[2];
 			gxlightdiffusecolor[lightNum].a = params[3];
-			GXColor ldc;
-			ldc.r = (gxlightdiffusecolor[lightNum].r * 0xFF);
-			ldc.g = (gxlightdiffusecolor[lightNum].g * 0xFF);
-			ldc.b = (gxlightdiffusecolor[lightNum].b * 0xFF);
-			ldc.a = (gxlightdiffusecolor[lightNum].a * 0xFF);
-			GX_InitLightColor(&gxlight[lightNum], ldc ); //move call to glend or init?;
-			
 			break;
 		case GL_AMBIENT:
 			gxlightambientcolor[lightNum].r = params[0];
@@ -774,7 +787,7 @@ void glEnable(GLenum type){
 				
 				
 				//stage 3 (ambient and diffuse light from material and lights)
-				
+
 				//color
 				GX_SetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
 				GX_SetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
@@ -792,23 +805,25 @@ void glEnable(GLenum type){
 				
 
 		// color - blend
-		GX_SetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+		GX_SetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+		//GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ONE, GX_CC_RASC, GX_CC_ZERO); //shagkur method
 		
 		// alpha - nop
-		GX_SetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA); //shagkur method
+		GX_SetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
+//		GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA); //shagkur method
+        GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO); //shagkur method
 
 		GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR1A1);
-				
+			
 				// end stage 4
 				
 				if (tex2denabled){ 
                                    
                     // stage 5 (textures)
 				
-				    GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //use texture
-				    GX_SetTevOp(GX_TEVSTAGE3, GX_MODULATE); //blend with previous stage
+				    GX_SetTevOrder(GX_TEVSTAGE4, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0); //use texture
+				    GX_SetTevOp(GX_TEVSTAGE4, GX_MODULATE); //blend with previous stage
 
                     // end stage 5
 
