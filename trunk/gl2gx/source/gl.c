@@ -256,10 +256,11 @@ void glEnd(void) {
 			GX_SetChanMatColor(GX_COLOR0A0, mdc ); 
 			
 			//Setup specular material color
-			gxchanspecular.r = (gxchanspecular.r * gxlightspecularcolor[lightcounter].r)* 0xFF;
-			gxchanspecular.g = (gxchanspecular.g * gxlightspecularcolor[lightcounter].g)* 0xFF;
-			gxchanspecular.b = (gxchanspecular.b * gxlightspecularcolor[lightcounter].b)* 0xFF;
-			gxchanspecular.a = (gxchanspecular.a * gxlightspecularcolor[lightcounter].a)* 0xFF;
+//			gxcurrentmaterialshininess *
+			gxchanspecular.r = (gxchanspecular.r * gxlightspecularcolor[lightcounter].r) * 0xFF;
+			gxchanspecular.g = (gxchanspecular.g * gxlightspecularcolor[lightcounter].g) * 0xFF;
+			gxchanspecular.b = (gxchanspecular.b * gxlightspecularcolor[lightcounter].b) * 0xFF;
+			gxchanspecular.a = (gxchanspecular.a * gxlightspecularcolor[lightcounter].a) * 0xFF;
 			GX_SetChanMatColor(GX_COLOR1A1, gxchanspecular); // use red as test color
 
             //Setup light diffuse color
@@ -320,10 +321,10 @@ void glEnd(void) {
                }
             }
             
-            guVecNormalize(&ldir);
-            ldir.x *= BIG_NUMBER;
-            ldir.y *= BIG_NUMBER;
-            ldir.z *= BIG_NUMBER;
+            //guVecNormalize(&ldir);
+            //ldir.x *= BIG_NUMBER;
+            //ldir.y *= BIG_NUMBER;
+            //ldir.z *= BIG_NUMBER;
             
             guMtxInverse(view,mvi);
             guMtxTranspose(mvi,view);
@@ -340,19 +341,24 @@ void glEnd(void) {
                sdir.x = gxspotdirection[lightcounter].x;
                sdir.y = gxspotdirection[lightcounter].y;
                sdir.z = gxspotdirection[lightcounter].z;
-               guVecNormalize(&sdir);
+               //guVecNormalize(&sdir);
                      
-               sdir.x *= BIG_NUMBER;
-               sdir.y *= BIG_NUMBER;
-               sdir.z *= BIG_NUMBER;       
+               //sdir.x *= BIG_NUMBER;
+               //sdir.y *= BIG_NUMBER;
+               //sdir.z *= BIG_NUMBER;       
                               
 			   guVecMultiply(view,&sdir,&sdir);
 			   
-               GX_TestInitSpecularDir(&gxlight[lightcounter], sdir.x, sdir.y, sdir.z); //needed to enable specular light
+			   Vector light_dir;
+			   guVecSub(&sdir, &lpos, &light_dir);
+			   
+               GX_TestInitSpecularDir(&gxlight[lightcounter], light_dir.x, light_dir.y, light_dir.z); //needed to enable specular light
                
             };
             
-            GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess ); // /180?
+            
+            //this calls:
+            // #define GX_InitLightShininess(lobj, shininess) (GX_InitLightAttn(lobj, 0.0F, 0.0F, 1.0F, (shininess)/2.0F, 0.0F, 1.0F-(shininess)/2.0F ))
 
             //Setup distance attinuation (opengl vs gx differences?)
 			//GX_InitLightDistAttn(&gxlight[lightcounter], 100.0f, gxspotexponent[lightcounter], GX_DA_GENTLE); //gxspotexponent was 0.5f
@@ -370,18 +376,53 @@ void glEnd(void) {
          
             float distance = BIG_NUMBER; //either distance of light or falloff factor
             float factor = 1 / (gxconstantattanuation[lightcounter] + gxlinearattanuation[lightcounter]*distance + gxquadraticattanuation[lightcounter]*distance*distance);                   
+             
+            //float factor = 5.0; 
+             
+            //k0 - 0;                            
+       		//k1 = 0.5f*(1.0f-ref_brite)/(ref_brite*ref_dist);
+ 			//k2 = 0.5f*(1.0f-ref_brite)/(ref_brite*ref_dist*ref_dist);                            
+
+/*                           
+            GX_InitLightAttn(&gxlight[lightcounter], 
+                                                     1.0, //filled by initlightspot
+                                                     0.0, //filled by initlightspot
+                                                     0.0, //filled by initlightspot
+                                                     gxconstantattanuation[lightcounter], 
+                                                     gxlinearattanuation[lightcounter]*distance, 
+                                                     gxquadraticattanuation[lightcounter]*distance*distance
                                                      
-            //GX_InitLightAttnK(&gxlight[lightcounter], 1.0f , factor ,0.0f);
-            GX_InitLightDistAttn(&gxlight[lightcounter], -39.0F,40.0F, GX_DA_GENTLE); //gxspotexponent[lightcounter]
+                                                     ) ;
+                                                   //  k0              k1   , k2                    
+*/                           
+                                                     
+            //GX_InitLightAttnK(&gxlight[lightcounter],  (gxcurrentmaterialshininess)/2.0F , 0.0F ,1.0F-(gxcurrentmaterialshininess)/2.0F);
+            
+             
+                     
+            
+            GX_InitLightDistAttn(&gxlight[lightcounter], factor ,1.0, GX_DA_GENTLE); //gxspotexponent[lightcounter]
+                                                         //ref_dist //ref_brite
             //                                           factor / strenght
 //1.0 is //    glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 10.0f); ??
                                                      
                                                            
             //Setup light type (normal/spotlight)
-            GX_InitLightSpot(&gxlight[lightcounter], gxspotcutoff[lightcounter], GX_SP_COS2); //not this is not a spot light
+            //0-90 / 255-0
+            
+            
                                                 //cut_off, spot func
             //GX_InitLightSpot(&gxlight[lightcounter], 0.0f, GX_SP_OFF); //not this is not a spot light
-
+            
+            //GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess); // /180?
+            
+            float testspot = 90 - ((gxcurrentmaterialshininess * 90) / 128); //thanks ector 90 - (x * 90 / 255) 
+            //if (gxcurrentmaterialshininess == 0){
+            //   testspot = 90;
+            //}
+            //zid 255-gxcurrentmaterialshininess/(255/90);
+            GX_InitLightSpot(&gxlight[lightcounter], testspot, GX_SP_COS); //not this is not a spot light (gxspotcutoff[lightcounter])
+            //GX_InitLightSpot(&gxlight[lightcounter], gxspotcutoff[lightcounter], GX_SP_COS); //not this is not a spot light ()
 
 			//Load the light up
 			switch (lightcounter){
@@ -592,7 +633,8 @@ void glLightfv( GLenum light, GLenum pname, const GLfloat *params ){
 void glMaterialf( GLenum face, GLenum pname, GLfloat param ){
 	switch(pname)
 	{
-		case GL_SHININESS: gxcurrentmaterialshininess = param; break;
+		case GL_SHININESS: 
+             gxcurrentmaterialshininess = param; break;
 	}
 };
 
@@ -623,6 +665,8 @@ void glMaterialfv( GLenum face, GLenum pname, const GLfloat *params ){
 			gxcurrentmaterialspecularcolor.b = params[2];
 			gxcurrentmaterialspecularcolor.a = params[3];
 		break;
+		case GL_SHININESS: 
+             gxcurrentmaterialshininess = params[0]; break;
 	}
 };
 
@@ -753,7 +797,7 @@ void glEnable(GLenum type){
                 //Setup light system/channels
 				GX_SetNumChans(2); //dependend on if there is a specular color/effect needed
 
-				//channel 1 (ambient + diffuse)
+				//channel 1 (ambient + diffuse)                          
 				GX_SetChanCtrl(GX_COLOR0A0,GX_TRUE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_SPOT);
 				
 				//channel 2 (specular)
