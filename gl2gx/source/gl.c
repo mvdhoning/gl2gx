@@ -210,9 +210,9 @@ void glEnd(void) {
 	gxchanspecular.a = gxcurrentmaterialspecularcolor.a;	
 	
 	int lightcounter = 0;
-	for (lightcounter =0; lightcounter < 8; lightcounter++){
+//	for (lightcounter =0; lightcounter < 8; lightcounter++){
 
-		if(gxlightenabled[lightcounter]){ //when light is enabled
+//		if(gxlightenabled[lightcounter]){ //when light is enabled
 
             //somewhere here an error happens?
 
@@ -246,6 +246,7 @@ void glEnd(void) {
 			ldc.b = gxlightdiffusecolor[lightcounter].b * 0xFF;
 			ldc.a = gxlightdiffusecolor[lightcounter].a * 0xFF;
 			GX_InitLightColor(&gxlight[lightcounter], ldc ); //move call to glend or init?;
+            GX_InitLightColor(&gxlight[1], ldc ); //move call to glend or init?;
 
 			//Setup light postion
 			
@@ -268,7 +269,7 @@ void glEnd(void) {
             
 			guVecMultiply(view,&lpos,&wpos);	   //light position should be transformed by world-to-view matrix (thanks h0lyRS)
 			GX_InitLightPosv(&gxlight[lightcounter], &wpos); //feed corrected coord to light pos
-			
+			GX_InitLightPosv(&gxlight[1], &wpos); //feed corrected coord to light pos
 		
 
 
@@ -308,6 +309,7 @@ void glEnd(void) {
             guVecMultiply(view,&ldir,&ldir); //and direction should be transformed by inv-transposed of world-to-view (thanks h0lyRS)
             
             GX_InitLightDir(&gxlight[lightcounter], ldir.x, ldir.y, ldir.z); //feed corrected coord to light dir
+            GX_InitLightDir(&gxlight[1], ldir.x, ldir.y, ldir.z); //feed corrected coord to light dir
            
             
 			if (gxspotcutoff[lightcounter] != 180){
@@ -328,7 +330,8 @@ void glEnd(void) {
 			   Vector light_dir;
 			   guVecSub(&sdir, &lpos, &light_dir);
 			   
-               GX_TestInitSpecularDir(&gxlight[lightcounter], light_dir.x, light_dir.y, light_dir.z); //needed to enable specular light
+			   GX_TestInitSpecularDir(&gxlight[lightcounter], light_dir.x, light_dir.y, light_dir.z); //needed to enable specular light
+               GX_TestInitSpecularDir(&gxlight[1], light_dir.x, light_dir.y, light_dir.z); //needed to enable specular light
                
             };
             
@@ -378,6 +381,7 @@ void glEnd(void) {
                      
             
             GX_InitLightDistAttn(&gxlight[lightcounter], factor ,1.0, GX_DA_STEEP); //gxspotexponent[lightcounter] GX_DA_GENTLE
+            GX_InitLightDistAttn(&gxlight[1], factor ,1.0, GX_DA_STEEP); //gxspotexponent[lightcounter] GX_DA_GENTLE
 
             
                                                          //ref_dist //ref_brite
@@ -405,27 +409,31 @@ void glEnd(void) {
             
             //setup normal spotlight
             GX_InitLightSpot(&gxlight[lightcounter], gxspotcutoff[lightcounter], GX_SP_RING1); //not this is not a spot light ()
+            GX_InitLightSpot(&gxlight[1], gxspotcutoff[lightcounter], GX_SP_RING1); //not this is not a spot light ()
             
             if ( gxcurrentmaterialshininess != 0 ) {
                  //if (gxspotcutoff[lightcounter] != 180) {
-                    GX_TestInitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
+                    GX_TestInitLightShininess(&gxlight[1], gxcurrentmaterialshininess);
                  //}
             };
 
 			//Load the light up
-			switch (lightcounter){
-				case 0: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT0); break;
-				case 1: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT1); break;
-				case 2: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT2); break;
-				case 3: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT3); break;
-				case 4: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT4); break;
-				case 5: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT5); break;
-				case 6: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT6); break;
-				case 7: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT7); break;
-			}
+//			switch (lightcounter){
+//				case 0: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT0); break;
+//				case 1: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT1); break;
+//				case 2: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT2); break;
+//				case 3: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT3); break;
+//				case 4: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT4); break;
+//				case 5: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT5); break;
+//				case 6: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT6); break;
+//				case 7: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT7); break;
+//			}
+			
+			GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT0);
+			GX_LoadLightObj(&gxlight[1], GX_LIGHT1);
 
-		}
-	}
+//		}
+//	}
 
 
 	//set the curtexture if tex2denabled
@@ -714,7 +722,7 @@ void glFlush(void) {
 void glEnable(GLenum type){
 
 	u8 gxlightmask = 0x00000000;
-//	u8 gxlightmaskspec = 0x00000000;
+	u8 gxlightmaskspec = 0x00000000;
 	int lightcounter = 0;
 	int countlights =0;
 
@@ -775,13 +783,15 @@ void glEnable(GLenum type){
 
 
 				//Setup lightmask with enabled lights (thanks h0lyRS)
-				for (lightcounter =0; lightcounter < 8; lightcounter++){
-					if(gxlightenabled[lightcounter]){ //when light is enabled
-						gxlightmask |= (GX_LIGHT0 << lightcounter);
-						//countlights++;
-					}
-				};
+//				for (lightcounter =0; lightcounter < 8; lightcounter++){
+//					if(gxlightenabled[lightcounter]){ //when light is enabled
+//						gxlightmask |= (GX_LIGHT0 << lightcounter);
+//						//countlights++;
+//					}
+//				};
 
+                gxlightmask |= (GX_LIGHT0 << 0);
+                gxlightmaskspec |= (GX_LIGHT0 << 1);
 
 
                 //Setup light system/channels
@@ -791,7 +801,7 @@ void glEnable(GLenum type){
 				GX_SetChanCtrl(GX_COLOR0A0,GX_TRUE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_SPOT);
 				
 				//channel 2 (specular)
-				GX_SetChanCtrl(GX_COLOR1A1,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,gxlightmask,GX_DF_CLAMP,GX_AF_SPEC);
+				GX_SetChanCtrl(GX_COLOR1A1,GX_ENABLE,GX_SRC_REG,GX_SRC_REG,gxlightmaskspec,GX_DF_CLAMP,GX_AF_SPEC);
 				
 				
 				//Setup TEV-shader
