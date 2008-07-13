@@ -115,73 +115,49 @@ void glBegin(GLenum type) {
 	};
 }
 
-
-void UploadVertex(int index){
-        int pos = index; 
-/*            
-        if (_type == GX_TRIANGLESTRIP) 
-        {              
-        if ( temp == 3)
-        {
-             reverse = 1;
-        }; 
-        
-        
-        
-        if (reverse==1)
-        {
-           switch(temp)
-           {
-              case 3: pos = index + 1; break;
-              case 4: pos = index + 1; break;
-              case 5: pos = index - 2; break;
-           }
-        }
-        }
-*/          
-                       
-		GX_Position3f32( _vertexelements[pos].x, _vertexelements[pos].y, _vertexelements[pos].z);	
-		
-        GX_Normal3f32(_normalelements[pos].x, _normalelements[pos].y, _normalelements[pos].z);
+// Render a vertex to Gecko (used by glEnd)
+void UploadVertex(int index){    
+		GX_Position3f32( _vertexelements[index].x, _vertexelements[index].y, _vertexelements[index].z);	
+        GX_Normal3f32(_normalelements[index].x, _normalelements[index].y, _normalelements[index].z);
 
 		//when using GL_FLAT only one color is allowed!!! //GL_SMOOTH allows for an color to be specified at each vertex
-		GX_Color3f32( _colorelements[pos].r, _colorelements[pos].g, _colorelements[pos].b); //glmaterialfv call instead when glcolormaterial call is used
-
-		GX_TexCoord2f32(_texcoordelements[pos].s,_texcoordelements[pos].t);
-/*		
-		temp += 1;
-		if (temp >= 6) {temp = 0; reverse = 0; };
-*/
-		
+		GX_Color3f32( _colorelements[index].r, _colorelements[index].g, _colorelements[index].b); //glmaterialfv call instead when glcolormaterial call is used
+		GX_TexCoord2f32(_texcoordelements[index].s,_texcoordelements[index].t);
 };
 
- void GX_TestInitSpecularDir(GXLightObj *lit_obj,f32 nx,f32 ny,f32 nz)
- {
+void GX_TestInitSpecularDir(GXLightObj *lit_obj,f32 nx,f32 ny,f32 nz) { 
      //f32 px, py, pz;
-     f32 hx, hy, hz, mag;
- 
-     // Compute half-angle vector
-     hx  = -nx;
-     hy  = -ny;
-     hz  = (-nz + 1.0f);
-     mag = 1.0f / sqrtf((hx * hx) + (hy * hy) + (hz * hz));
-     hx *= mag;
-     hy *= mag;
-     hz *= mag;
- 
-     //px  = -nx * BIG_NUMBER;
-     //py  = -ny * BIG_NUMBER;
-     //pz  = -nz * BIG_NUMBER;
- 
- 	//((f32*)lit_obj)[10] = px;
- 	//((f32*)lit_obj)[11] = py;
- 	//((f32*)lit_obj)[12] = pz;
- 	((f32*)lit_obj)[13] = hx;
- 	((f32*)lit_obj)[14] = hy;
- 	((f32*)lit_obj)[15] = hz;
+      f32 hx, hy, hz, mag;  
+     // Compute half-angle vector 
+     hx = -nx;
+     hy = -ny; 
+     hz = (-nz + 1.0f); 
+     mag = 1.0f / sqrtf((hx * hx) + (hy * hy) + (hz * hz)); 
+     hx *= mag; 
+     hy *= mag; 
+     hz *= mag;  
+     
+     //px = -nx * BIG_NUMBER; 
+     //py = -ny * BIG_NUMBER; 
+     //pz = -nz * BIG_NUMBER;  
+     //((f32*)lit_obj)[10] = px; 
+     //((f32*)lit_obj)[11] = py; 
+     //((f32*)lit_obj)[12] = pz; 
+     ((f32*)lit_obj)[13] = hx; 
+     ((f32*)lit_obj)[14] = hy; 
+     ((f32*)lit_obj)[15] = hz;
+} 
+
+void GX_TestInitLightShininess(GXLightObj *lobj, f32 shininess) {
+
+   shininess = (shininess / 128) * 256; //convert opengl range to gx
+   GX_InitLightAttn(lobj, 1.0, 0.0, 2.0, (shininess)*0.5, 0.0, 1.0F-(shininess)*0.5 );      
+
+//Redshade
+//math behind a and k is [a0 + a1^2 + a2^3], brightness as you go away from the center, [or brightness as you go away from source in k
+//if you want to see the GL equivalent, look up GL_(CONSTANT|LINEAR|QUADRATIC)_ATTENUATION, since those are k0,k1,k2 respectively
+//your end equation value should be between 0.0 and 1.0
 }
-
-
 
 void glEnd(void) {
      
@@ -401,7 +377,9 @@ void glEnd(void) {
              
                      
             
-            GX_InitLightDistAttn(&gxlight[lightcounter], factor ,1.0, GX_DA_GENTLE); //gxspotexponent[lightcounter]
+            GX_InitLightDistAttn(&gxlight[lightcounter], factor ,1.0, GX_DA_STEEP); //gxspotexponent[lightcounter] GX_DA_GENTLE
+
+            
                                                          //ref_dist //ref_brite
             //                                           factor / strenght
 //1.0 is //    glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 10.0f); ??
@@ -416,13 +394,23 @@ void glEnd(void) {
             
             //GX_InitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess); // /180?
             
-            float testspot = 90 - ((gxcurrentmaterialshininess * 90) / 128); //thanks ector 90 - (x * 90 / 255) 
+            //float testspot = 90 - ((gxcurrentmaterialshininess * 90) / 128); //thanks ector 90 - (x * 90 / 255) 
             //if (gxcurrentmaterialshininess == 0){
             //   testspot = 90;
             //}
             //zid 255-gxcurrentmaterialshininess/(255/90);
-            GX_InitLightSpot(&gxlight[lightcounter], testspot, GX_SP_COS); //not this is not a spot light (gxspotcutoff[lightcounter])
-            //GX_InitLightSpot(&gxlight[lightcounter], gxspotcutoff[lightcounter], GX_SP_COS); //not this is not a spot light ()
+            
+            //setup specular highlight
+            //GX_InitLightSpot(&gxlight[lightcounter], testspot, GX_SP_COS); //not this is not a spot light (gxspotcutoff[lightcounter])
+            
+            //setup normal spotlight
+            GX_InitLightSpot(&gxlight[lightcounter], gxspotcutoff[lightcounter], GX_SP_RING1); //not this is not a spot light ()
+            
+            if ( gxcurrentmaterialshininess != 0 ) {
+                 //if (gxspotcutoff[lightcounter] != 180) {
+                    GX_TestInitLightShininess(&gxlight[lightcounter], gxcurrentmaterialshininess);
+                 //}
+            };
 
 			//Load the light up
 			switch (lightcounter){
@@ -435,7 +423,6 @@ void glEnd(void) {
 				case 6: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT6); break;
 				case 7: GX_LoadLightObj(&gxlight[lightcounter], GX_LIGHT7); break;
 			}
-
 
 		}
 	}
@@ -727,6 +714,7 @@ void glFlush(void) {
 void glEnable(GLenum type){
 
 	u8 gxlightmask = 0x00000000;
+//	u8 gxlightmaskspec = 0x00000000;
 	int lightcounter = 0;
 	int countlights =0;
 
@@ -790,9 +778,11 @@ void glEnable(GLenum type){
 				for (lightcounter =0; lightcounter < 8; lightcounter++){
 					if(gxlightenabled[lightcounter]){ //when light is enabled
 						gxlightmask |= (GX_LIGHT0 << lightcounter);
-						countlights++;
+						//countlights++;
 					}
 				};
+
+
 
                 //Setup light system/channels
 				GX_SetNumChans(2); //dependend on if there is a specular color/effect needed
@@ -867,16 +857,22 @@ void glEnable(GLenum type){
 				
 
 		// color - blend
+		
+
+
 		GX_SetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
-		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-//		GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ONE, GX_CC_RASC, GX_CC_ZERO); //shagkur method
+		//GX_SetTevColorIn(GX_TEVSTAGE3, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+       // GX_SetTevColorIn(GX_TEVSTAGE3,GX_CC_ZERO,GX_CC_RASC,GX_CC_CPREV,GX_CC_ZERO);
+GX_SetTevColorIn(GX_TEVSTAGE3,GX_CC_ZERO,GX_CC_RASC,GX_CC_ONE,GX_CC_CPREV);
+
 		
 		// alpha - nop
 		GX_SetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE, GX_TEVPREV);
-		GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA); //shagkur method
-//        GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO); //shagkur method
+		//GX_SetTevAlphaIn(GX_TEVSTAGE3, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA); //shagkur method
+        GX_SetTevAlphaIn(GX_TEVSTAGE3,GX_CA_ZERO,GX_CA_RASA,GX_CA_APREV,GX_CA_ZERO);
 
 		GX_SetTevOrder(GX_TEVSTAGE3, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR1A1);
+		
 			
 				// end stage 4
 				
