@@ -5,4 +5,6 @@ OpenGL wrapper for GX on WII or Gamecube
 
 Development is currently on hold until a new maintainer is found
 
+Read the [Wiki](../../wiki) for documentation and resources.
+
 License: [GNU Lesser GPL](http://www.gnu.org/licenses/lgpl.html)
